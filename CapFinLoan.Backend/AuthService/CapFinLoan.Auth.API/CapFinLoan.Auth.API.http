@@ -1,6 +1,32 @@
 @CapFinLoan.Auth.API_HostAddress = http://localhost:5025
 
-GET {{CapFinLoan.Auth.API_HostAddress}}/weatherforecast/
-Accept: application/json
+### Signup - Create a new applicant account
+POST {{CapFinLoan.Auth.API_HostAddress}}/auth/signup
+Content-Type: application/json
 
-###
+{
+  "name": "John Applicant",
+  "email": "john@example.com",
+  "password": "Test@1234",
+  "role": "Applicant"
+}
+
+### Login - Authenticate with email and password
+POST {{CapFinLoan.Auth.API_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "Test@1234"
+}
+
+### Admin Signup
+POST {{CapFinLoan.Auth.API_HostAddress}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Admin User",
+  "email": "admin@capfinloan.com",
+  "password": "AdminPass@123",
+  "role": "Admin"
+}
