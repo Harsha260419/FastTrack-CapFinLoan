@@ -128,4 +128,37 @@ public class AdminController : ControllerBase
             return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
         }
     }
+
+    [HttpPut("documents/{id:guid}/verify")]
+    public async Task<IActionResult> VerifyDocument(Guid id, [FromBody] VerifyDocumentRequestDto request)
+    {
+        try
+        {
+            var userIdClaim = User.FindFirstValue("UserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdClaim, out var adminUserId))
+            {
+                return Unauthorized(new { message = "Invalid or missing admin user identifier in token." });
+            }
+
+            var adminIdentity = User.Identity?.Name ?? User.FindFirst("email")?.Value ?? "ADMIN";
+            var result = await _adminService.VerifyDocumentAsync(id, request, adminUserId, adminIdentity);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
+        }
+    }
 }

@@ -68,3 +68,6 @@ npm-debug.log*
 
 # Ignore temporary files
 ~$*
+
+# Document uploads (generated runtime content)
+CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Uploads/

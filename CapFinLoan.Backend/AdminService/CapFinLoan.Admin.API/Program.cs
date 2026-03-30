@@ -24,6 +24,7 @@ builder.Services.AddDbContext<AdminDbContext>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<ApplicationServiceOptions>(builder.Configuration.GetSection("ApplicationService"));
+builder.Services.Configure<DocumentServiceOptions>(builder.Configuration.GetSection("DocumentService"));
 
 builder.Services.AddScoped<IDecisionRepository, DecisionRepository>();
 builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();
@@ -35,6 +36,17 @@ builder.Services.AddHttpClient<IApplicationClient, ApplicationClient>((servicePr
     if (string.IsNullOrWhiteSpace(options.BaseUrl))
     {
         throw new InvalidOperationException("ApplicationService:BaseUrl is missing from configuration.");
+    }
+
+    client.BaseAddress = new Uri(options.BaseUrl);
+});
+
+builder.Services.AddHttpClient<IDocumentClient, DocumentClient>((serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DocumentServiceOptions>>().Value;
+    if (string.IsNullOrWhiteSpace(options.BaseUrl))
+    {
+        throw new InvalidOperationException("DocumentService:BaseUrl is missing from configuration.");
     }
 
     client.BaseAddress = new Uri(options.BaseUrl);

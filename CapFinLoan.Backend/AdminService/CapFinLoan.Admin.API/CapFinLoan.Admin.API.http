@@ -1,7 +1,18 @@
-@CapFinLoan_Admin_API_HostAddress = http://localhost:5178
+@CapFinLoan_Admin_API_HostAddress = http://localhost:5088
 
 GET {{CapFinLoan_Admin_API_HostAddress}}/admin/dashboard
 Authorization: Bearer {{jwtToken}}
 Accept: application/json
+
+###
+
+PUT {{CapFinLoan_Admin_API_HostAddress}}/admin/documents/{{documentId}}/verify
+Authorization: Bearer {{jwtToken}}
+Content-Type: application/json
+
+{
+	"status": "Verified",
+	"remarks": "All checks passed"
+}
 
 ###

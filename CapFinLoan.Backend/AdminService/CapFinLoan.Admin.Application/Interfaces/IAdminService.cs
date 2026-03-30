@@ -9,5 +9,6 @@ public interface IAdminService
     Task<ApplicationStatusResponseDto> GetApplicationStatusAsync(Guid applicationId);
     Task<IReadOnlyList<ApplicationStatusHistoryItemDto>> GetApplicationStatusHistoryAsync(Guid applicationId);
     Task<DecisionResponseDto> CreateDecisionAsync(Guid applicationId, CreateDecisionRequestDto request, Guid adminUserId, string adminIdentity);
+    Task<DocumentVerificationResponseDto> VerifyDocumentAsync(Guid documentId, VerifyDocumentRequestDto request, Guid adminUserId, string adminIdentity);
     Task<AdminDashboardDto> GetDashboardAsync();
 }

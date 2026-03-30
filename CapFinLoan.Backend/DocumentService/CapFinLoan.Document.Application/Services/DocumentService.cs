@@ -193,6 +193,14 @@ public class DocumentService : IDocumentService
         return documents.Select(MapToResponse).ToList();
     }
 
+    public async Task<DocumentResponseDto> GetDocumentByIdAsync(Guid documentId, CancellationToken cancellationToken = default)
+    {
+        var document = await _documentRepository.GetByIdAsync(documentId)
+            ?? throw new KeyNotFoundException("Document not found.");
+
+        return MapToResponse(document);
+    }
+
     public async Task<DocumentResponseDto> VerifyDocumentAsync(
         Guid adminUserId,
         Guid documentId,

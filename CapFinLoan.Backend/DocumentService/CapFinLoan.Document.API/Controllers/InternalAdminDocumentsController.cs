@@ -7,15 +7,23 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Document.API.Controllers;
 
 [ApiController]
-[Route("admin/documents")]
+[ApiExplorerSettings(IgnoreApi = true)]
+[Route("internal/admin/documents")]
 [Authorize(Roles = "ADMIN")]
-public class AdminDocumentsController : ControllerBase
+public class InternalAdminDocumentsController : ControllerBase
 {
     private readonly IDocumentService _documentService;
 
-    public AdminDocumentsController(IDocumentService documentService)
+    public InternalAdminDocumentsController(IDocumentService documentService)
     {
         _documentService = documentService;
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _documentService.GetDocumentByIdAsync(id, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPut("{id:guid}/verify")]

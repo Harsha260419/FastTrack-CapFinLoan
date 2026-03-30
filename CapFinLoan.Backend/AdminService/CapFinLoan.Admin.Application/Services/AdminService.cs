@@ -8,15 +8,18 @@ namespace CapFinLoan.Admin.Application.Services;
 public class AdminService : IAdminService
 {
     private readonly IApplicationClient _applicationClient;
+    private readonly IDocumentClient _documentClient;
     private readonly IDecisionRepository _decisionRepository;
     private readonly IStatusHistoryRepository _statusHistoryRepository;
 
     public AdminService(
         IApplicationClient applicationClient,
+        IDocumentClient documentClient,
         IDecisionRepository decisionRepository,
         IStatusHistoryRepository statusHistoryRepository)
     {
         _applicationClient = applicationClient;
+        _documentClient = documentClient;
         _decisionRepository = decisionRepository;
         _statusHistoryRepository = statusHistoryRepository;
     }
@@ -76,6 +79,29 @@ public class AdminService : IAdminService
     public async Task<IReadOnlyList<ApplicationStatusHistoryItemDto>> GetApplicationStatusHistoryAsync(Guid applicationId)
     {
         var historyItems = await _statusHistoryRepository.GetByApplicationIdAsync(applicationId);
+
+        if (historyItems.Count == 0)
+        {
+            var currentStatus = await _applicationClient.GetCurrentStatusAsync(applicationId);
+            if (!string.IsNullOrWhiteSpace(currentStatus))
+            {
+                var normalizedStatus = AdminStatusConstants.Normalize(currentStatus);
+                return
+                [
+                    new ApplicationStatusHistoryItemDto
+                    {
+                        HistoryId = Guid.Empty,
+                        ApplicationId = applicationId,
+                        AdminUserId = Guid.Empty,
+                        FromStatus = normalizedStatus,
+                        ToStatus = normalizedStatus,
+                        ChangedBy = "SYSTEM",
+                        Remarks = "Current status snapshot.",
+                        ChangedAt = DateTime.UtcNow
+                    }
+                ];
+            }
+        }
 
         return historyItems.Select(x => new ApplicationStatusHistoryItemDto
         {
@@ -165,6 +191,48 @@ public class AdminService : IAdminService
             InterestRate = existingDecision.InterestRate,
             DecidedAt = existingDecision.DecidedAt
         };
+    }
+
+    public async Task<DocumentVerificationResponseDto> VerifyDocumentAsync(Guid documentId, VerifyDocumentRequestDto request, Guid adminUserId, string adminIdentity)
+    {
+        if (adminUserId == Guid.Empty)
+        {
+            throw new UnauthorizedAccessException("Invalid admin user identifier.");
+        }
+
+        if (request is null)
+        {
+            throw new ArgumentException("Request cannot be null.");
+        }
+
+        var document = await _documentClient.GetDocumentByIdAsync(documentId);
+        if (document is null)
+        {
+            throw new KeyNotFoundException("Document not found.");
+        }
+
+        var applicationId = document.ApplicationId;
+        var statusBefore = AdminStatusConstants.Normalize(await _applicationClient.GetCurrentStatusAsync(applicationId) ?? "UNKNOWN");
+
+        var result = await _documentClient.VerifyDocumentAsync(documentId, request);
+        if (result is null)
+        {
+            throw new KeyNotFoundException("Document not found.");
+        }
+
+        var statusAfter = AdminStatusConstants.Normalize(await _applicationClient.GetCurrentStatusAsync(applicationId) ?? "UNKNOWN");
+
+        await RecordStatusHistoryAsync(
+            applicationId,
+            adminUserId,
+            adminIdentity,
+            statusBefore,
+            statusAfter,
+            request.Remarks);
+
+        await _statusHistoryRepository.SaveChangesAsync();
+
+        return result;
     }
 
     public async Task<AdminDashboardDto> GetDashboardAsync()
