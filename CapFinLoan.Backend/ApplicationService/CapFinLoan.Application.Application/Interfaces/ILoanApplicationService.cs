@@ -10,4 +10,7 @@ public interface ILoanApplicationService
     Task<ApplicationResponseDto> DeleteApplicationAsync(Guid userId, Guid applicationId);
     Task<(List<ApplicationResponseDto> Applications, int TotalCount)> GetMyApplicationsAsync(Guid userId, int pageNumber = 1, int pageSize = 10);
     Task<ApplicationStatusDto> GetApplicationStatusAsync(Guid userId, Guid applicationId);
+    Task<IReadOnlyList<ApplicationResponseDto>> GetApplicationsForAdminAsync(string? status);
+    Task<ApplicationResponseDto> GetApplicationByIdForAdminAsync(Guid applicationId);
+    Task<ApplicationResponseDto> UpdateApplicationStatusInternalAsync(Guid applicationId, UpdateApplicationStatusInternalRequestDto request);
 }

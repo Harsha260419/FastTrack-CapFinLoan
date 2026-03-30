@@ -1,6 +1,7 @@
-@CapFinLoan.Admin.API_HostAddress = http://localhost:5067
+@CapFinLoan_Admin_API_HostAddress = http://localhost:5178
 
-GET {{CapFinLoan.Admin.API_HostAddress}}/weatherforecast/
+GET {{CapFinLoan_Admin_API_HostAddress}}/admin/dashboard
+Authorization: Bearer {{jwtToken}}
 Accept: application/json
 
 ###

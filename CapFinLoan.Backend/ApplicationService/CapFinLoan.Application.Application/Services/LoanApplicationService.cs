@@ -232,6 +232,74 @@ public class LoanApplicationService : ILoanApplicationService
         };
     }
 
+    public async Task<IReadOnlyList<ApplicationResponseDto>> GetApplicationsForAdminAsync(string? status)
+    {
+        List<LoanApplication> applications;
+
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            applications = await GetAllApplicationsAsync();
+        }
+        else
+        {
+            var parsedStatus = ParseApplicationStatus(status);
+            applications = await _repository.GetByStatusAsync(parsedStatus);
+        }
+
+        return applications
+            .OrderByDescending(x => x.UpdatedAt)
+            .Select(app => MapToApplicationResponseDto(app, true, string.Empty))
+            .ToList();
+    }
+
+    public async Task<ApplicationResponseDto> GetApplicationByIdForAdminAsync(Guid applicationId)
+    {
+        var application = await _repository.GetByIdAsync(applicationId)
+            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+
+        return MapToApplicationResponseDto(application, true, string.Empty);
+    }
+
+    public async Task<ApplicationResponseDto> UpdateApplicationStatusInternalAsync(Guid applicationId, UpdateApplicationStatusInternalRequestDto request)
+    {
+        if (request is null)
+        {
+            throw new ArgumentException("Request cannot be null.");
+        }
+
+        var targetStatus = ParseApplicationStatus(request.Status);
+        var application = await _repository.GetByIdAsync(applicationId)
+            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+
+        if (application.Status == targetStatus)
+        {
+            return MapToApplicationResponseDto(application, true, "Application status already up to date.");
+        }
+
+        if (!IsTransitionAllowed(application.Status, targetStatus))
+        {
+            throw new InvalidOperationException($"Invalid status transition: {application.Status} -> {targetStatus}");
+        }
+
+        application.Status = targetStatus;
+        application.UpdatedAt = DateTime.UtcNow;
+
+        if (targetStatus == ApplicationStatus.Submitted && application.SubmittedAt is null)
+        {
+            application.SubmittedAt = DateTime.UtcNow;
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Remarks))
+        {
+            application.AdminRemarks = request.Remarks.Trim();
+        }
+
+        await _repository.UpdateAsync(application);
+        await _repository.SaveChangesAsync();
+
+        return MapToApplicationResponseDto(application, true, "Application status updated successfully.");
+    }
+
     private void ValidateCreateApplicationRequest(CreateApplicationRequestDto request)
     {
         if (request == null)
@@ -293,6 +361,71 @@ public class LoanApplicationService : ILoanApplicationService
         {
             throw new ArgumentException("Income and EMI values cannot be negative.");
         }
+    }
+
+    private async Task<List<LoanApplication>> GetAllApplicationsAsync()
+    {
+        var statuses = Enum.GetValues<ApplicationStatus>();
+        var all = new List<LoanApplication>();
+
+        foreach (var status in statuses)
+        {
+            var byStatus = await _repository.GetByStatusAsync(status);
+            all.AddRange(byStatus);
+        }
+
+        return all;
+    }
+
+    private static ApplicationStatus ParseApplicationStatus(string rawStatus)
+    {
+        if (string.IsNullOrWhiteSpace(rawStatus))
+        {
+            throw new ArgumentException("Status is required.");
+        }
+
+        if (int.TryParse(rawStatus.Trim(), out _))
+        {
+            throw new ArgumentException("Numeric status is not allowed. Use literal status values.");
+        }
+
+        var normalized = rawStatus.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
+        var canonical = normalized switch
+        {
+            "DRAFT" => nameof(ApplicationStatus.Draft),
+            "SUBMITTED" => nameof(ApplicationStatus.Submitted),
+            "DOCSPENDING" or "DOCS_PENDING" => nameof(ApplicationStatus.DocsPending),
+            "DOCSVERIFIED" or "DOCS_VERIFIED" => nameof(ApplicationStatus.DocsVerified),
+            "UNDERREVIEW" or "UNDER_REVIEW" => nameof(ApplicationStatus.UnderReview),
+            "APPROVED" => nameof(ApplicationStatus.Approved),
+            "REJECTED" => nameof(ApplicationStatus.Rejected),
+            "CLOSED" => nameof(ApplicationStatus.Closed),
+            _ => rawStatus.Trim()
+        };
+
+        if (!Enum.TryParse<ApplicationStatus>(canonical, true, out var parsed))
+        {
+            throw new ArgumentException("Invalid status value.");
+        }
+
+        return parsed;
+    }
+
+    private static bool IsTransitionAllowed(ApplicationStatus current, ApplicationStatus target)
+    {
+        return (current, target) switch
+        {
+            (ApplicationStatus.Submitted, ApplicationStatus.DocsPending) => true,
+            (ApplicationStatus.Submitted, ApplicationStatus.DocsVerified) => true,
+            (ApplicationStatus.DocsPending, ApplicationStatus.DocsVerified) => true,
+            (ApplicationStatus.DocsVerified, ApplicationStatus.DocsPending) => true,
+            (ApplicationStatus.DocsVerified, ApplicationStatus.UnderReview) => true,
+            (ApplicationStatus.UnderReview, ApplicationStatus.Approved) => true,
+            (ApplicationStatus.UnderReview, ApplicationStatus.Rejected) => true,
+            (ApplicationStatus.Approved, ApplicationStatus.Closed) => true,
+            (ApplicationStatus.Rejected, ApplicationStatus.Closed) => true,
+            _ => false
+        };
     }
 
     private void ValidateUpdateApplicationRequest(UpdateApplicationRequestDto request)

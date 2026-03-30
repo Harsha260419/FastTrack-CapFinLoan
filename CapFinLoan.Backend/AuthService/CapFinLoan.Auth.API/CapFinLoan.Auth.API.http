@@ -8,7 +8,7 @@ Content-Type: application/json
   "name": "John Applicant",
   "email": "john@example.com",
   "password": "Test@1234",
-  "role": "Applicant"
+  "role": "APPLICANT"
 }
 
 ### Login - Authenticate with email and password
@@ -28,5 +28,5 @@ Content-Type: application/json
   "name": "Admin User",
   "email": "admin@capfinloan.com",
   "password": "AdminPass@123",
-  "role": "Admin"
+  "role": "ADMIN"
 }

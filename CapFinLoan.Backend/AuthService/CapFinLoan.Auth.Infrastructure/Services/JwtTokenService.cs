@@ -19,14 +19,16 @@ public class JwtTokenService : ITokenService
 
     public string GenerateToken(User user)
     {
+        var normalizedRole = NormalizeRole(user.Role);
+
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email),
-            new(ClaimTypes.Role, user.Role),
+            new(ClaimTypes.Role, normalizedRole),
             new("UserId", user.Id.ToString()),
             new("Email", user.Email),
-            new("Role", user.Role)
+            new("Role", normalizedRole)
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
@@ -40,5 +42,15 @@ public class JwtTokenService : ITokenService
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.Equals(role, UserRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            return UserRoles.Admin;
+        }
+
+        return UserRoles.Applicant;
     }
 }

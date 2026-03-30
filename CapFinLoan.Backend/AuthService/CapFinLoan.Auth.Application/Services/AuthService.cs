@@ -55,9 +55,7 @@ public class AuthService : IAuthService
             return new AuthResponseDto { Success = false, Message = "Email already registered." };
         }
 
-        var role = UserRoles.All.Contains(request.Role, StringComparer.OrdinalIgnoreCase)
-            ? request.Role
-            : UserRoles.Applicant;
+        var role = NormalizeRole(request.Role);
 
         var user = new User
         {
@@ -81,7 +79,7 @@ public class AuthService : IAuthService
             Token = token,
             UserId = user.Id,
             Email = user.Email,
-            Role = user.Role
+            Role = role
         };
     }
 
@@ -111,6 +109,7 @@ public class AuthService : IAuthService
             return new AuthResponseDto { Success = false, Message = "Invalid email or password." };
         }
 
+        var normalizedRole = NormalizeRole(user.Role);
         var token = _tokenService.GenerateToken(user);
         return new AuthResponseDto
         {
@@ -119,7 +118,7 @@ public class AuthService : IAuthService
             Token = token,
             UserId = user.Id,
             Email = user.Email,
-            Role = user.Role
+            Role = normalizedRole
         };
     }
 
@@ -137,5 +136,15 @@ public class AuthService : IAuthService
         var hasSpecial = Regex.IsMatch(password, "[^A-Za-z0-9]");
 
         return hasMinLength && hasUpper && hasLower && hasDigit && hasSpecial;
+    }
+
+    private static string NormalizeRole(string? requestedRole)
+    {
+        if (string.Equals(requestedRole, UserRoles.Admin, StringComparison.OrdinalIgnoreCase))
+        {
+            return UserRoles.Admin;
+        }
+
+        return UserRoles.Applicant;
     }
 }

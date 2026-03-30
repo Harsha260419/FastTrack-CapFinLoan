@@ -20,7 +20,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> CreateApplication([FromBody] CreateApplicationRequestDto request)
     {
         try
@@ -40,7 +40,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> UpdateApplication(Guid id, [FromBody] UpdateApplicationRequestDto request)
     {
         try
@@ -64,7 +64,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpPost("{id:guid}/submit")]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> SubmitApplication(Guid id, [FromBody] SubmitApplicationRequestDto request)
     {
         try
@@ -88,7 +88,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> DeleteApplication(Guid id)
     {
         try
@@ -112,7 +112,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("my")]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> GetMyApplications([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
     {
         try
@@ -139,7 +139,7 @@ public class ApplicationsController : ControllerBase
     }
 
     [HttpGet("{id:guid}/status")]
-    [Authorize(Roles = "Applicant")]
+    [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> GetApplicationStatus(Guid id)
     {
         try
