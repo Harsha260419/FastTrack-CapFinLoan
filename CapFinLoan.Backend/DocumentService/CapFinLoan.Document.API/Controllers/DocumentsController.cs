@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Document.API.Controllers;
 
 [ApiController]
-[Route("documents")]
+[Route("api/documents")]
 [Authorize(Roles = "APPLICANT")]
 public class DocumentsController : ControllerBase
 {

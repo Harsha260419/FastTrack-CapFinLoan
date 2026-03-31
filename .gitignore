@@ -71,3 +71,6 @@ npm-debug.log*
 
 # Document uploads (generated runtime content)
 CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Uploads/
+
+# Local helper scripts
+start-services.ps1

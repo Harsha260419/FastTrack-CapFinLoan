@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Admin.API.Controllers;
 
 [ApiController]
-[Route("admin")]
+[Route("api/admin")]
 [Authorize(Roles = "ADMIN")]
 public class AdminController : ControllerBase
 {

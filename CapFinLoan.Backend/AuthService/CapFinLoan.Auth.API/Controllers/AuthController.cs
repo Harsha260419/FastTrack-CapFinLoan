@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Auth.API.Controllers;
 
 [ApiController]
-[Route("auth")]
+[Route("api/auth")]
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;

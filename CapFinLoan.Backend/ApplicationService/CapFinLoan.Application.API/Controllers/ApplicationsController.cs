@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Application.API.Controllers;
 
 [ApiController]
-[Route("applications")]
+[Route("api/applications")]
 [Authorize]
 public class ApplicationsController : ControllerBase
 {

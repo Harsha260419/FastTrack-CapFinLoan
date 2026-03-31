@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace CapFinLoan.Application.API.Controllers;
 
 [ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
 [Route("internal/applications")]
 [Authorize]
 public class InternalApplicationsController : ControllerBase
