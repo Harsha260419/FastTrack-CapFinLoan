@@ -61,6 +61,7 @@ public class AuthService : IAuthService
         {
             Name = request.Name.Trim(),
             Email = normalizedEmail,
+            PhoneNumber = string.IsNullOrWhiteSpace(request.PhoneNumber) ? null : request.PhoneNumber.Trim(),
             PasswordHash = _passwordHasher.HashPassword(request.Password),
             Role = role,
             IsActive = true,

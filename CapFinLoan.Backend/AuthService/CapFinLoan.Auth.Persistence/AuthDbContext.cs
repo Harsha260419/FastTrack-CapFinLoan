@@ -30,6 +30,9 @@ public class AuthDbContext : DbContext
                 .HasMaxLength(200)
                 .IsRequired();
 
+            entity.Property(x => x.PhoneNumber)
+                .HasMaxLength(20);
+
             entity.Property(x => x.PasswordHash)
                 .IsRequired();
 

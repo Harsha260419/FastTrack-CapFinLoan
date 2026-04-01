@@ -7,6 +7,7 @@ Content-Type: application/json
 {
   "name": "John Applicant",
   "email": "john@example.com",
+  "phoneNumber": "+15550001111",
   "password": "Test@1234",
   "role": "APPLICANT"
 }
@@ -27,6 +28,7 @@ Content-Type: application/json
 {
   "name": "Admin User",
   "email": "admin@capfinloan.com",
+  "phoneNumber": "+15550002222",
   "password": "AdminPass@123",
   "role": "ADMIN"
 }
