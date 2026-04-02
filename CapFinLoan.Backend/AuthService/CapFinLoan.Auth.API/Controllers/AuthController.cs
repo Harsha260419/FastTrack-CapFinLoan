@@ -15,6 +15,18 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
+    [HttpPost("signup/send-otp")]
+    public async Task<IActionResult> SendSignupOtp([FromBody] SendSignupOtpRequestDto request)
+    {
+        var result = await _authService.SendSignupOtpAsync(request);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
     [HttpPost("signup")]
     public async Task<IActionResult> Signup([FromBody] SignupRequestDto request)
     {

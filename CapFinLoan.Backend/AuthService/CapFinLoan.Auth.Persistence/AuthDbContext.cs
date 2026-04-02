@@ -10,6 +10,7 @@ public class AuthDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<SignupOtp> SignupOtps => Set<SignupOtp>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -31,7 +32,8 @@ public class AuthDbContext : DbContext
                 .IsRequired();
 
             entity.Property(x => x.PhoneNumber)
-                .HasMaxLength(20);
+                .HasMaxLength(20)
+                .IsRequired();
 
             entity.Property(x => x.PasswordHash)
                 .IsRequired();
@@ -45,6 +47,28 @@ public class AuthDbContext : DbContext
 
             entity.HasIndex(x => x.Email)
                 .IsUnique();
+        });
+
+        modelBuilder.Entity<SignupOtp>(entity =>
+        {
+            entity.ToTable("SignupOtps");
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.Email)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(x => x.OtpHash)
+                .HasMaxLength(128)
+                .IsRequired();
+
+            entity.Property(x => x.ExpiresAtUtc)
+                .IsRequired();
+
+            entity.Property(x => x.CreatedAtUtc)
+                .IsRequired();
+
+            entity.HasIndex(x => new { x.Email, x.CreatedAtUtc });
         });
     }
 }

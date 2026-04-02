@@ -1,7 +1,15 @@
 @CapFinLoan.Auth.API_HostAddress = http://localhost:5025
 
+### Request OTP for signup
+POST {{CapFinLoan.Auth.API_HostAddress}}/api/auth/signup/send-otp
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+
 ### Signup - Create a new applicant account
-POST {{CapFinLoan.Auth.API_HostAddress}}/auth/signup
+POST {{CapFinLoan.Auth.API_HostAddress}}/api/auth/signup
 Content-Type: application/json
 
 {
@@ -9,11 +17,12 @@ Content-Type: application/json
   "email": "john@example.com",
   "phoneNumber": "+15550001111",
   "password": "Test@1234",
-  "role": "APPLICANT"
+  "role": "APPLICANT",
+  "otpCode": "123456"
 }
 
 ### Login - Authenticate with email and password
-POST {{CapFinLoan.Auth.API_HostAddress}}/auth/login
+POST {{CapFinLoan.Auth.API_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -22,7 +31,7 @@ Content-Type: application/json
 }
 
 ### Admin Signup
-POST {{CapFinLoan.Auth.API_HostAddress}}/auth/signup
+POST {{CapFinLoan.Auth.API_HostAddress}}/api/auth/signup
 Content-Type: application/json
 
 {
@@ -30,5 +39,6 @@ Content-Type: application/json
   "email": "admin@capfinloan.com",
   "phoneNumber": "+15550002222",
   "password": "AdminPass@123",
-  "role": "ADMIN"
+  "role": "ADMIN",
+  "otpCode": "123456"
 }

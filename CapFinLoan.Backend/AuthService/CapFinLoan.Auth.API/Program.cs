@@ -2,6 +2,7 @@ using System.Text;
 using CapFinLoan.Auth.Application.Interfaces;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Infrastructure;
+using CapFinLoan.Auth.Infrastructure.Options;
 using CapFinLoan.Auth.Infrastructure.Services;
 using CapFinLoan.Auth.Persistence;
 using CapFinLoan.Auth.Persistence.Repositories;
@@ -21,11 +22,14 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 
 // Configure JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
 
 // Register application services (DI)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISignupOtpRepository, SignupOtpRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Get JWT settings for authentication configuration
