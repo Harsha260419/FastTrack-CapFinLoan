@@ -69,10 +69,6 @@ public class ApplicationDbContext : DbContext
                 .HasPrecision(18, 2)
                 .IsRequired();
 
-            entity.Property(x => x.ExistingEmiAmount)
-                .HasPrecision(18, 2)
-                .IsRequired();
-
             entity.Property(x => x.FullName)
                 .HasMaxLength(150)
                 .IsRequired();

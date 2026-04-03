@@ -4,11 +4,10 @@ import useAuthStore from '../store/authStore'
 
 function Navbar() {
   const navigate = useNavigate()
-  const user = useAuthStore((state) => state.user)
+  const auth = useAuthStore((state) => state.auth)
   const logout = useAuthStore((state) => state.logout)
 
-  const displayName =
-    user?.name || user?.fullName || user?.firstName || user?.username || 'User'
+  const displayName = auth?.email || 'User'
 
   const handleLogout = () => {
     logout()

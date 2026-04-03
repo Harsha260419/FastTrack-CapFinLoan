@@ -21,7 +21,6 @@ public class LoanApplication
     public string EmploymentType { get; set; } = string.Empty;
     public decimal MonthlyIncome { get; set; }
     public decimal AnnualIncome { get; set; }
-    public decimal ExistingEmiAmount { get; set; }
 
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;

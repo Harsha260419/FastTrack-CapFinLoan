@@ -37,7 +37,6 @@ public class LoanApplicationService : ILoanApplicationService
             EmploymentType = request.EmploymentDetails.EmploymentType.Trim(),
             MonthlyIncome = request.EmploymentDetails.MonthlyIncome,
             AnnualIncome = request.EmploymentDetails.AnnualIncome,
-            ExistingEmiAmount = request.EmploymentDetails.ExistingEmiAmount,
             FullName = fullName,
             Email = request.PersonalDetails.Email.Trim().ToLowerInvariant(),
             PhoneNumber = request.PersonalDetails.Phone.Trim(),
@@ -94,7 +93,6 @@ public class LoanApplicationService : ILoanApplicationService
         application.EmploymentType = request.EmploymentDetails.EmploymentType.Trim();
         application.MonthlyIncome = request.EmploymentDetails.MonthlyIncome;
         application.AnnualIncome = request.EmploymentDetails.AnnualIncome;
-        application.ExistingEmiAmount = request.EmploymentDetails.ExistingEmiAmount;
         application.FullName = fullName;
         application.Email = request.PersonalDetails.Email.Trim().ToLowerInvariant();
         application.PhoneNumber = request.PersonalDetails.Phone.Trim();
@@ -356,10 +354,9 @@ public class LoanApplicationService : ILoanApplicationService
         }
 
         if (request.EmploymentDetails.MonthlyIncome < 0 ||
-            request.EmploymentDetails.AnnualIncome < 0 ||
-            request.EmploymentDetails.ExistingEmiAmount < 0)
+            request.EmploymentDetails.AnnualIncome < 0)
         {
-            throw new ArgumentException("Income and EMI values cannot be negative.");
+            throw new ArgumentException("Income values cannot be negative.");
         }
     }
 

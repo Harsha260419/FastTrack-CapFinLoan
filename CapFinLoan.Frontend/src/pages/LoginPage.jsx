@@ -28,10 +28,11 @@ function LoginPage() {
         password: values.password,
       })
 
-      const { token, role, user } = response.data || {}
+      const authResponse = response.data || {}
+      const { role } = authResponse
       const normalizedRole = String(role || '').toUpperCase()
 
-      setAuth(user, token, normalizedRole)
+      setAuth({ ...authResponse, role: normalizedRole })
 
       if (normalizedRole === 'ADMIN') {
         navigate('/admin/dashboard')

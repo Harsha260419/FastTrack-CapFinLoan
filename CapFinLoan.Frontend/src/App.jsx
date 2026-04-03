@@ -8,8 +8,8 @@ import AdminReportsPage from './pages/AdminReportsPage'
 import AdminUsersPage from './pages/AdminUsersPage'
 import ApplicantApplyPage from './pages/ApplicantApplyPage'
 import ApplicantDocumentsPage from './pages/ApplicantDocumentsPage'
-import ApplicantHomePage from './pages/ApplicantHomePage'
 import ApplicantStatusPage from './pages/ApplicantStatusPage'
+import ApplicantDashboardPage from './pages/applicant/DashboardPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -25,10 +25,11 @@ function App() {
 
         <Route element={<RequireAuth />}>
           <Route path="/applicant" element={<ApplicantLayout />}>
-            <Route path="dashboard" element={<ApplicantHomePage />} />
+            <Route path="dashboard" element={<ApplicantDashboardPage />} />
             <Route path="apply" element={<ApplicantApplyPage />} />
             <Route path="documents" element={<ApplicantDocumentsPage />} />
             <Route path="status" element={<ApplicantStatusPage />} />
+            <Route path="status/:id" element={<ApplicantStatusPage />} />
           </Route>
 
           <Route element={<RequireAdmin />}>
