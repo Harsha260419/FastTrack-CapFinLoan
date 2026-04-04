@@ -230,6 +230,19 @@ public class LoanApplicationService : ILoanApplicationService
         };
     }
 
+    public async Task<ApplicationDetailsResponseDto> GetApplicationDetailsAsync(Guid requesterUserId, bool isAdmin, Guid applicationId)
+    {
+        var application = await _repository.GetByIdAsync(applicationId)
+            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+
+        if (!isAdmin && application.UserId != requesterUserId)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to view this application.");
+        }
+
+        return MapToApplicationDetailsResponseDto(application);
+    }
+
     public async Task<IReadOnlyList<ApplicationResponseDto>> GetApplicationsForAdminAsync(string? status)
     {
         List<LoanApplication> applications;
@@ -473,6 +486,43 @@ public class LoanApplicationService : ILoanApplicationService
             AdminRemarks = application.AdminRemarks,
             Success = success,
             Message = message
+        };
+    }
+
+    private ApplicationDetailsResponseDto MapToApplicationDetailsResponseDto(LoanApplication application)
+    {
+        return new ApplicationDetailsResponseDto
+        {
+            ApplicationId = application.ApplicationId,
+            Status = application.Status.ToString(),
+            PersonalDetails = new ApplicationPersonalDetailsResponseDto
+            {
+                FirstName = application.FirstName,
+                LastName = application.LastName,
+                DateOfBirth = application.DateOfBirth,
+                Gender = application.Gender,
+                Email = application.Email,
+                Phone = application.PhoneNumber,
+                AddressLine1 = application.AddressLine1,
+                AddressLine2 = application.AddressLine2,
+                City = application.City,
+                State = application.State,
+                PostalCode = application.PostalCode
+            },
+            EmploymentDetails = new ApplicationEmploymentDetailsResponseDto
+            {
+                EmployerName = application.EmployerName,
+                EmploymentType = application.EmploymentType,
+                MonthlyIncome = application.MonthlyIncome,
+                AnnualIncome = application.AnnualIncome
+            },
+            LoanDetails = new ApplicationLoanDetailsResponseDto
+            {
+                RequestedAmount = application.LoanAmount,
+                RequestedTenureMonths = application.TenureMonths,
+                LoanPurpose = application.LoanPurpose,
+                Remarks = application.AdminRemarks ?? string.Empty
+            }
         };
     }
 

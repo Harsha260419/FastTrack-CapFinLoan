@@ -138,6 +138,27 @@ public class ApplicationsController : ControllerBase
         }
     }
 
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "APPLICANT,ADMIN")]
+    public async Task<IActionResult> GetApplicationDetails(Guid id)
+    {
+        try
+        {
+            var isAdmin = IsAdmin();
+            var requesterUserId = isAdmin ? Guid.Empty : GetUserIdFromToken();
+            var result = await _loanApplicationService.GetApplicationDetailsAsync(requesterUserId, isAdmin, id);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+    }
+
     [HttpGet("{id:guid}/status")]
     [Authorize(Roles = "APPLICANT")]
     public async Task<IActionResult> GetApplicationStatus(Guid id)
@@ -170,5 +191,12 @@ public class ApplicationsController : ControllerBase
         }
 
         return userId;
+    }
+
+    private bool IsAdmin()
+    {
+        return User.IsInRole("ADMIN") ||
+               string.Equals(User.FindFirstValue(ClaimTypes.Role), "ADMIN", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(User.FindFirstValue("Role"), "ADMIN", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -9,6 +9,7 @@ import AdminUsersPage from './pages/AdminUsersPage'
 import ApplicantApplyPage from './pages/ApplicantApplyPage'
 import ApplicantDocumentsPage from './pages/ApplicantDocumentsPage'
 import ApplicantStatusPage from './pages/ApplicantStatusPage'
+import ApplicationDetailPage from './pages/applicant/ApplicationDetailPage'
 import ApplicantDashboardPage from './pages/applicant/DashboardPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -28,6 +29,7 @@ function App() {
             <Route path="dashboard" element={<ApplicantDashboardPage />} />
             <Route path="apply" element={<ApplicantApplyPage />} />
             <Route path="documents" element={<ApplicantDocumentsPage />} />
+            <Route path="application/:id" element={<ApplicationDetailPage />} />
             <Route path="status" element={<ApplicantStatusPage />} />
             <Route path="status/:id" element={<ApplicantStatusPage />} />
           </Route>
