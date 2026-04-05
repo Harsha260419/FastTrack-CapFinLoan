@@ -1,4 +1,4 @@
-import { Check, Upload } from 'lucide-react'
+import { Check, Upload, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import axiosInstance from '../../api/axiosInstance'
@@ -125,6 +125,8 @@ function ApplicationDetailPage() {
   const [pageError, setPageError] = useState('')
   const [selectedFilesByType, setSelectedFilesByType] = useState({})
   const [uploadStatesByType, setUploadStatesByType] = useState({})
+  const [previewImageUrl, setPreviewImageUrl] = useState('')
+  const [showImagePreview, setShowImagePreview] = useState(false)
 
   const currentStatus = String(application?.status || '')
   const statusOrder = useMemo(() => getStatusOrder(currentStatus), [currentStatus])
@@ -232,6 +234,14 @@ function ApplicationDetailPage() {
     loadData()
   }, [id])
 
+  useEffect(() => {
+    return () => {
+      if (previewImageUrl) {
+        window.URL.revokeObjectURL(previewImageUrl)
+      }
+    }
+  }, [previewImageUrl])
+
   const timelineMap = useMemo(() => {
     const map = new Map()
 
@@ -264,6 +274,21 @@ function ApplicationDetailPage() {
     }))
   }
 
+  const showUploadMessage = (docType, key, message) => {
+    setUploadState(docType, { [key]: message })
+    window.setTimeout(() => {
+      setUploadState(docType, { [key]: '' })
+    }, 3000)
+  }
+
+  const closeImagePreview = () => {
+    if (previewImageUrl) {
+      window.URL.revokeObjectURL(previewImageUrl)
+    }
+    setPreviewImageUrl('')
+    setShowImagePreview(false)
+  }
+
   const handleSelectFile = (docType, file) => {
     setUploadState(docType, { error: '', success: '' })
 
@@ -274,12 +299,12 @@ function ApplicationDetailPage() {
 
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
     if (!allowedTypes.includes(file.type)) {
-      setUploadState(docType, { error: 'Only PDF, JPG, and PNG files are allowed.' })
+      showUploadMessage(docType, 'error', 'Only PDF, JPG, and PNG files are allowed.')
       return
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setUploadState(docType, { error: 'File exceeds 5MB limit.' })
+      showUploadMessage(docType, 'error', 'File exceeds 5MB limit.')
       return
     }
 
@@ -307,12 +332,12 @@ function ApplicationDetailPage() {
     const replaceDocumentId = getDocumentId(existingDocument)
 
     if (!selectedFile) {
-      setUploadState(docType, { error: 'Please select a file to upload.' })
+      showUploadMessage(docType, 'error', 'Please select a file to upload.')
       return
     }
 
     if (!id) {
-      setUploadState(docType, { error: 'Missing application identifier.' })
+      showUploadMessage(docType, 'error', 'Missing application identifier.')
       return
     }
 
@@ -334,7 +359,7 @@ function ApplicationDetailPage() {
         })
       }
 
-      setUploadState(docType, { success: 'Document uploaded successfully' })
+      showUploadMessage(docType, 'success', 'Document uploaded successfully')
       setSelectedFilesByType((prev) => ({ ...prev, [docType]: null }))
       if (fileInputRefs.current[docType]) {
         fileInputRefs.current[docType].value = ''
@@ -342,9 +367,70 @@ function ApplicationDetailPage() {
 
       await fetchDocuments()
     } catch (error) {
-      setUploadState(docType, { error: 'Unable to upload document. Please try again.' })
+      showUploadMessage(docType, 'error', 'Unable to upload document. Please try again.')
     } finally {
       setUploadState(docType, { isUploading: false })
+    }
+  }
+
+  const handleViewDocument = async (docType, documentId, fileName) => {
+    if (!documentId) {
+      showUploadMessage(docType, 'error', 'Document not found for preview.')
+      return
+    }
+
+    const token = sessionStorage.getItem('token')
+    if (!token) {
+      showUploadMessage(docType, 'error', 'Session expired. Please log in again.')
+      return
+    }
+
+    setUploadState(docType, { isViewing: true, error: '', success: '' })
+
+    try {
+      const response = await fetch(
+        `http://localhost:8002/gateway/documents/${documentId}/file`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`)
+      }
+
+      const blob = await response.blob()
+      const contentType = String(response.headers.get('content-type') || '').toLowerCase()
+      const extension = String(fileName || '')
+        .split('.')
+        .pop()
+        ?.toLowerCase()
+
+      const isImage = contentType.startsWith('image/') || ['jpg', 'jpeg', 'png'].includes(extension)
+      const isPdf = contentType.includes('pdf') || extension === 'pdf'
+
+      const url = window.URL.createObjectURL(blob)
+
+      if (isImage) {
+        if (previewImageUrl) {
+          window.URL.revokeObjectURL(previewImageUrl)
+        }
+        setPreviewImageUrl(url)
+        setShowImagePreview(true)
+      } else if (isPdf) {
+        window.open(url, '_blank')
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000)
+      } else {
+        window.open(url, '_blank')
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000)
+      }
+    } catch (error) {
+      const name = fileName || 'document'
+      showUploadMessage(docType, 'error', `Unable to open ${name}. Please try again.`)
+    } finally {
+      setUploadState(docType, { isViewing: false })
     }
   }
 
@@ -460,6 +546,7 @@ function ApplicationDetailPage() {
                   const statusValue = statusMap[existingDocument?.status] || toReadableStatus(existingDocument?.status)
                   const selectedFile = selectedFilesByType[config.apiValue]
                   const state = uploadStatesByType[config.apiValue] || {}
+                  const documentId = getDocumentId(existingDocument)
 
                   return (
                     <div key={config.apiValue} className="rounded-xl border border-slate-200 p-4">
@@ -502,6 +589,17 @@ function ApplicationDetailPage() {
                       ) : null}
 
                       <div className="mt-3 flex items-center gap-2">
+                        {existingDocument ? (
+                          <button
+                            type="button"
+                            disabled={state.isViewing}
+                            onClick={() => handleViewDocument(config.apiValue, documentId, fileName)}
+                            className="rounded-md border border-slate-300 px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {state.isViewing ? 'Viewing...' : 'View'}
+                          </button>
+                        ) : null}
+
                         <button
                           type="button"
                           onClick={() => openPicker(config.apiValue)}
@@ -528,6 +626,29 @@ function ApplicationDetailPage() {
             )}
           </section>
         </>
+      ) : null}
+
+      {showImagePreview ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80"
+          onClick={closeImagePreview}
+        >
+          <button
+            type="button"
+            onClick={closeImagePreview}
+            className="absolute right-4 top-4 rounded-full p-2 text-white hover:bg-white/20"
+            aria-label="Close image preview"
+          >
+            <X size={22} />
+          </button>
+
+          <img
+            src={previewImageUrl}
+            alt="Document preview"
+            onClick={(event) => event.stopPropagation()}
+            className="max-h-screen max-w-3xl object-contain"
+          />
+        </div>
       ) : null}
     </section>
   )
