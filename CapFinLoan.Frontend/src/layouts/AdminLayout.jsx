@@ -1,4 +1,4 @@
-import { BarChart3, LayoutDashboard, ListChecks, Users } from 'lucide-react'
+import { BarChart3, LayoutDashboard, ListChecks } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
@@ -7,7 +7,6 @@ const adminLinks = [
   { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Applications Queue', to: '/admin/queue', icon: ListChecks },
   { label: 'Reports', to: '/admin/reports', icon: BarChart3 },
-  { label: 'Users', to: '/admin/users', icon: Users },
 ]
 
 function AdminLayout() {

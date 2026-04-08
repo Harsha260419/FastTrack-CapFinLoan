@@ -12,5 +12,6 @@ public interface ILoanApplicationRepository
     Task<(List<Domain.Entities.LoanApplication>, int TotalCount)> GetByUserIdPaginatedAsync(Guid userId, int pageNumber, int pageSize);
     Task<bool> ExistsByIdAndUserIdAsync(Guid applicationId, Guid userId);
     Task<List<Domain.Entities.LoanApplication>> GetByStatusAsync(ApplicationStatus status);
+    Task<List<(string ToStatus, DateTime ChangedAt, string? Remarks)>> GetStatusHistoryByApplicationIdAsync(Guid applicationId);
     Task SaveChangesAsync();
 }

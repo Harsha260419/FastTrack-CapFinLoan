@@ -258,6 +258,10 @@ public class AdminService : IAdminService
         return normalized switch
         {
             AdminStatusConstants.DocsVerified => "Verified",
+            AdminStatusConstants.UnderReview => "Verified",
+            AdminStatusConstants.Approved => "Verified",
+            AdminStatusConstants.Rejected => "Verified",
+            AdminStatusConstants.Closed => "Verified",
             AdminStatusConstants.DocsPending => "Pending",
             AdminStatusConstants.Submitted => "Pending",
             _ => "NotAvailable"

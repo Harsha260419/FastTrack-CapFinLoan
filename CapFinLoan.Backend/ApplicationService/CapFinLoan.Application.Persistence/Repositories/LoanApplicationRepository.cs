@@ -2,6 +2,7 @@ using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Domain.Entities;
 using CapFinLoan.Application.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.SqlClient;
 
 namespace CapFinLoan.Application.Persistence.Repositories;
 
@@ -72,6 +73,46 @@ public class LoanApplicationRepository : ILoanApplicationRepository
             .Where(x => x.Status == status)
             .OrderByDescending(x => x.UpdatedAt)
             .ToListAsync();
+    }
+
+    public async Task<List<(string ToStatus, DateTime ChangedAt, string? Remarks)>> GetStatusHistoryByApplicationIdAsync(Guid applicationId)
+    {
+        const string sql = @"
+SELECT ToStatus, ChangedAt, Remarks
+FROM [admin].[ApplicationStatusHistory]
+WHERE ApplicationId = @applicationId
+ORDER BY ChangedAt ASC";
+
+        try
+        {
+            await using var connection = _context.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = sql;
+
+            var applicationIdParameter = new SqlParameter("@applicationId", applicationId);
+            command.Parameters.Add(applicationIdParameter);
+
+            var result = new List<(string ToStatus, DateTime ChangedAt, string? Remarks)>();
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var toStatus = reader.GetString(0);
+                var changedAt = reader.GetDateTime(1);
+                var remarks = reader.IsDBNull(2) ? null : reader.GetString(2);
+                result.Add((toStatus, changedAt, remarks));
+            }
+
+            return result;
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     public async Task SaveChangesAsync()

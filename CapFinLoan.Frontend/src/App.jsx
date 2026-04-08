@@ -2,13 +2,13 @@ import { Route, Routes } from 'react-router-dom'
 import AdminLayout from './layouts/AdminLayout'
 import ApplicantLayout from './layouts/ApplicantLayout'
 import MainLayout from './layouts/MainLayout'
-import AdminDashboardPage from './pages/AdminDashboardPage'
-import AdminQueuePage from './pages/AdminQueuePage'
-import AdminReportsPage from './pages/AdminReportsPage'
-import AdminUsersPage from './pages/AdminUsersPage'
 import ApplicantApplyPage from './pages/ApplicantApplyPage'
 import ApplicantDocumentsPage from './pages/ApplicantDocumentsPage'
 import ApplicantStatusPage from './pages/ApplicantStatusPage'
+import AdminDashboardPage from './pages/admin/AdminDashboardPage'
+import AdminQueuePage from './pages/admin/AdminQueuePage'
+import AdminReportsPage from './pages/AdminReportsPage'
+import AdminReviewPage from './pages/admin/AdminReviewPage'
 import ApplicationDetailPage from './pages/applicant/ApplicationDetailPage'
 import ApplicantDashboardPage from './pages/applicant/DashboardPage'
 import LandingPage from './pages/LandingPage'
@@ -38,8 +38,8 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="queue" element={<AdminQueuePage />} />
+              <Route path="review/:id" element={<AdminReviewPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
-              <Route path="users" element={<AdminUsersPage />} />
             </Route>
           </Route>
         </Route>

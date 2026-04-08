@@ -218,7 +218,7 @@ public class LoanApplicationService : ILoanApplicationService
             throw new UnauthorizedAccessException("You do not have permission to view this application status.");
         }
 
-        var timeline = BuildStatusTimeline(application);
+        var timeline = await BuildStatusTimelineAsync(application);
 
         return new ApplicationStatusDto
         {
@@ -526,7 +526,7 @@ public class LoanApplicationService : ILoanApplicationService
         };
     }
 
-    private List<StatusTimelineEntry> BuildStatusTimeline(LoanApplication application)
+    private async Task<List<StatusTimelineEntry>> BuildStatusTimelineAsync(LoanApplication application)
     {
         var timeline = new List<StatusTimelineEntry>
         {
@@ -539,32 +539,83 @@ public class LoanApplicationService : ILoanApplicationService
             }
         };
 
-        // If submitted, add submission to timeline
-        if (application.Status != ApplicationStatus.Draft && application.SubmittedAt.HasValue)
+        var historyRows = await _repository.GetStatusHistoryByApplicationIdAsync(application.ApplicationId);
+
+        var reachedStatuses = new Dictionary<ApplicationStatus, (DateTime ChangedAt, string? Remarks)>();
+
+        foreach (var row in historyRows.OrderBy(x => x.ChangedAt))
         {
-            timeline.Add(new StatusTimelineEntry
+            if (!TryParseApplicationStatus(row.ToStatus, out var parsedStatus))
             {
-                Status = ApplicationStatus.Submitted.ToString(),
-                TransitionDate = application.SubmittedAt.Value,
-                Remarks = "Application submitted for review",
-                NextAction = "Upload required documents for KYC verification"
-            });
+                continue;
+            }
+
+            if (parsedStatus == ApplicationStatus.Draft)
+            {
+                continue;
+            }
+
+            if (!reachedStatuses.ContainsKey(parsedStatus))
+            {
+                reachedStatuses[parsedStatus] = (row.ChangedAt, row.Remarks);
+            }
         }
 
-        // Add current status if different from previous
-        if (application.Status != ApplicationStatus.Draft && application.Status != ApplicationStatus.Submitted)
+        if (!reachedStatuses.ContainsKey(ApplicationStatus.Submitted) && application.SubmittedAt.HasValue)
         {
-            var statusRemarks = GetStatusRemarks(application.Status);
+            reachedStatuses[ApplicationStatus.Submitted] = (application.SubmittedAt.Value, "Application submitted for review");
+        }
+
+        if (application.Status != ApplicationStatus.Draft && !reachedStatuses.ContainsKey(application.Status))
+        {
+            reachedStatuses[application.Status] = (application.UpdatedAt, null);
+        }
+
+        foreach (var reached in reachedStatuses.OrderBy(x => x.Value.ChangedAt))
+        {
             timeline.Add(new StatusTimelineEntry
             {
-                Status = application.Status.ToString(),
-                TransitionDate = application.UpdatedAt,
-                Remarks = statusRemarks,
-                NextAction = GetNextActionForStatus(application.Status)
+                Status = reached.Key.ToString(),
+                TransitionDate = reached.Value.ChangedAt,
+                Remarks = string.IsNullOrWhiteSpace(reached.Value.Remarks)
+                    ? GetStatusRemarks(reached.Key)
+                    : reached.Value.Remarks,
+                NextAction = GetNextActionForStatus(reached.Key)
             });
         }
 
         return timeline;
+    }
+
+    private static bool TryParseApplicationStatus(string rawStatus, out ApplicationStatus parsedStatus)
+    {
+        parsedStatus = default;
+
+        if (string.IsNullOrWhiteSpace(rawStatus))
+        {
+            return false;
+        }
+
+        if (int.TryParse(rawStatus.Trim(), out _))
+        {
+            return false;
+        }
+
+        var normalized = rawStatus.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
+        var canonical = normalized switch
+        {
+            "DRAFT" => nameof(ApplicationStatus.Draft),
+            "SUBMITTED" => nameof(ApplicationStatus.Submitted),
+            "DOCSPENDING" or "DOCS_PENDING" => nameof(ApplicationStatus.DocsPending),
+            "DOCSVERIFIED" or "DOCS_VERIFIED" => nameof(ApplicationStatus.DocsVerified),
+            "UNDERREVIEW" or "UNDER_REVIEW" => nameof(ApplicationStatus.UnderReview),
+            "APPROVED" => nameof(ApplicationStatus.Approved),
+            "REJECTED" => nameof(ApplicationStatus.Rejected),
+            "CLOSED" => nameof(ApplicationStatus.Closed),
+            _ => rawStatus.Trim()
+        };
+
+        return Enum.TryParse(canonical, true, out parsedStatus);
     }
 
     private string GetStatusRemarks(ApplicationStatus status)

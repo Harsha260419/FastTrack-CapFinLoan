@@ -73,7 +73,12 @@ public class DocumentService : IDocumentService
                 throw new UnauthorizedAccessException("You are not allowed to replace this document.");
             }
 
-            await _fileStorageService.DeleteFileIfExistsAsync(existing.FilePath, cancellationToken);
+            var oldFilePath = existing.FilePath;
+            if (!string.IsNullOrWhiteSpace(oldFilePath) && File.Exists(oldFilePath))
+            {
+                File.Delete(oldFilePath);
+            }
+
             var (savedFileName, savedFilePath) = await _fileStorageService.SaveFileAsync(request.File, cancellationToken);
 
             existing.FileName = savedFileName;
@@ -151,7 +156,12 @@ public class DocumentService : IDocumentService
 
         _fileStorageService.ValidateFile(request.File);
 
-        await _fileStorageService.DeleteFileIfExistsAsync(existing.FilePath, cancellationToken);
+        var oldFilePath = existing.FilePath;
+        if (!string.IsNullOrWhiteSpace(oldFilePath) && File.Exists(oldFilePath))
+        {
+            File.Delete(oldFilePath);
+        }
+
         var (savedFileName, savedFilePath) = await _fileStorageService.SaveFileAsync(request.File, cancellationToken);
 
         existing.FileName = savedFileName;
@@ -169,6 +179,7 @@ public class DocumentService : IDocumentService
 
     public async Task<IReadOnlyList<DocumentResponseDto>> GetDocumentsByApplicationIdAsync(
         Guid userId,
+        bool isAdmin,
         Guid applicationId,
         string? bearerToken,
         CancellationToken cancellationToken = default)
@@ -178,18 +189,24 @@ public class DocumentService : IDocumentService
             throw new ArgumentException("ApplicationId is required.");
         }
 
-        var isValidApplication = await _applicationServiceClient.ValidateApplicationAccessAsync(
-            applicationId,
-            userId,
-            bearerToken,
-            cancellationToken);
-
-        if (!isValidApplication)
+        if (!isAdmin)
         {
-            throw new UnauthorizedAccessException("You are not allowed to access this application.");
+            var isValidApplication = await _applicationServiceClient.ValidateApplicationAccessAsync(
+                applicationId,
+                userId,
+                bearerToken,
+                cancellationToken);
+
+            if (!isValidApplication)
+            {
+                throw new UnauthorizedAccessException("You are not allowed to access this application.");
+            }
         }
 
-        var documents = await _documentRepository.GetByApplicationIdAndUserIdAsync(applicationId, userId);
+        var documents = isAdmin
+            ? await _documentRepository.GetByApplicationIdAsync(applicationId)
+            : await _documentRepository.GetByApplicationIdAndUserIdAsync(applicationId, userId);
+
         return documents.Select(MapToResponse).ToList();
     }
 
