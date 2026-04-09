@@ -8,10 +8,14 @@ namespace CapFinLoan.Application.Application.Services;
 public class LoanApplicationService : ILoanApplicationService
 {
     private readonly ILoanApplicationRepository _repository;
+    private readonly IAdminStatusHistoryClient _adminStatusHistoryClient;
 
-    public LoanApplicationService(ILoanApplicationRepository repository)
+    public LoanApplicationService(
+        ILoanApplicationRepository repository,
+        IAdminStatusHistoryClient adminStatusHistoryClient)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _adminStatusHistoryClient = adminStatusHistoryClient ?? throw new ArgumentNullException(nameof(adminStatusHistoryClient));
     }
 
     public async Task<ApplicationResponseDto> CreateApplicationAsync(Guid userId, CreateApplicationRequestDto request)
@@ -539,7 +543,11 @@ public class LoanApplicationService : ILoanApplicationService
             }
         };
 
-        var historyRows = await _repository.GetStatusHistoryByApplicationIdAsync(application.ApplicationId);
+        var historyRows = await _adminStatusHistoryClient.GetStatusHistoryAsync(application.ApplicationId);
+        if (historyRows.Count == 0)
+        {
+            historyRows = await _repository.GetStatusHistoryByApplicationIdAsync(application.ApplicationId);
+        }
 
         var reachedStatuses = new Dictionary<ApplicationStatus, (DateTime ChangedAt, string? Remarks)>();
 

@@ -15,8 +15,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+var applicationConnectionString =
+	builder.Configuration.GetConnectionString("ApplicationServiceConnection")
+	?? throw new InvalidOperationException("Missing ConnectionStrings:ApplicationServiceConnection for ApplicationService.");
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+	options.UseSqlServer(applicationConnectionString));
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<AdminServiceOptions>(builder.Configuration.GetSection(AdminServiceOptions.SectionName));

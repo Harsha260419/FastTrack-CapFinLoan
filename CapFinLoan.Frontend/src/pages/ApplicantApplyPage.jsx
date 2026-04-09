@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import axiosInstance from '../api/axiosInstance'
@@ -39,17 +39,22 @@ function toIsoDate(dateString) {
     return null
   }
 
-  const parsed = new Date(`${dateString}T00:00:00`)
-  if (Number.isNaN(parsed.getTime())) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateString))) {
     return null
   }
 
-  return parsed.toISOString()
+  return `${dateString}T00:00:00Z`
 }
 
 function toInputDate(value) {
   if (!value) {
     return ''
+  }
+
+  const rawValue = String(value)
+  const dateMatch = rawValue.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (dateMatch?.[1]) {
+    return dateMatch[1]
   }
 
   const parsed = new Date(value)
@@ -62,6 +67,11 @@ function toInputDate(value) {
 
 function getApplicationId(payload) {
   return payload?.id || payload?.applicationId || payload?.data?.id || payload?.data?.applicationId || null
+}
+
+function parseNumberWithFallback(value, fallbackValue) {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallbackValue
 }
 
 function ApplicantApplyPage() {
@@ -78,6 +88,7 @@ function ApplicantApplyPage() {
   const [apiError, setApiError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isReadOnly, setIsReadOnly] = useState(false)
+  const skipNextQueryLoadRef = useRef(false)
 
   const {
     register,
@@ -117,6 +128,11 @@ function ApplicantApplyPage() {
 
   useEffect(() => {
     if (!queryId) {
+      return
+    }
+
+    if (skipNextQueryLoadRef.current && String(applicationId || '') === String(queryId)) {
+      skipNextQueryLoadRef.current = false
       return
     }
 
@@ -189,7 +205,7 @@ function ApplicantApplyPage() {
     return () => {
       isMounted = false
     }
-  }, [queryId, reset, authEmail])
+  }, [queryId, reset, authEmail, applicationId])
 
   const draftPayload = useMemo(() => ({
     personalDetails: {
@@ -200,7 +216,7 @@ function ApplicantApplyPage() {
       email: values.email,
       phone: values.phone,
       addressLine1: values.addressLine1,
-      addressLine2: values.addressLine2 || null,
+      addressLine2: values.addressLine2 || '',
       city: values.city,
       state: values.state,
       postalCode: values.postalCode,
@@ -208,13 +224,13 @@ function ApplicantApplyPage() {
     employmentDetails: {
       employerName: values.employerName,
       employmentType: values.employmentType,
-      monthlyIncome: parseFloat(values.monthlyIncome),
-      annualIncome: parseFloat(values.annualIncome),
+      monthlyIncome: parseNumberWithFallback(values.monthlyIncome, 0),
+      annualIncome: parseNumberWithFallback(values.annualIncome, 0),
     },
     loanDetails: {
-      requestedAmount: parseFloat(values.requestedAmount),
-      requestedTenureMonths: parseInt(values.requestedTenureMonths, 10),
-      loanPurpose: values.loanPurpose,
+      requestedAmount: parseNumberWithFallback(values.requestedAmount, 10000),
+      requestedTenureMonths: parseNumberWithFallback(values.requestedTenureMonths, 12),
+      loanPurpose: values.loanPurpose || 'Home',
       remarks: values.remarks || null,
     },
   }), [values])
@@ -262,8 +278,10 @@ function ApplicantApplyPage() {
         const createdId = getApplicationId(createResponse?.data)
 
         if (createdId) {
-          setApplicationId(String(createdId))
-          setSearchParams({ id: String(createdId) })
+          const createdIdString = String(createdId)
+          setApplicationId(createdIdString)
+          skipNextQueryLoadRef.current = true
+          setSearchParams({ id: createdIdString }, { replace: true })
         }
       } else {
         await axiosInstance.put(`/gateway/applications/${applicationId}`, draftPayload)
@@ -271,7 +289,8 @@ function ApplicantApplyPage() {
 
       setSuccessMessage('Draft saved successfully')
     } catch (error) {
-      setApiError('Failed to save draft. Please try again.')
+      const apiMessage = error?.response?.data?.message
+      setApiError(apiMessage || 'Failed to save draft. Please try again.')
     } finally {
       setIsSavingDraft(false)
     }
@@ -672,7 +691,7 @@ function ApplicantApplyPage() {
 
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-4">
                 <div>
-                  {currentStep <= 3 ? (
+                  {currentStep === 3 ? (
                     <button
                       type="button"
                       disabled={isReadOnly}

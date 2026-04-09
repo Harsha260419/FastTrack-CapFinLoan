@@ -74,3 +74,6 @@ CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Uploads/
 
 # Local helper scripts
 start-services.ps1
+
+# Temporary local secret in Auth service config
+CapFinLoan.Backend/AuthService/CapFinLoan.Auth.API/appsettings.json
