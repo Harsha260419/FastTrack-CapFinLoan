@@ -1,10 +1,11 @@
-import { FileUp, LayoutDashboard } from 'lucide-react'
+import { FileUp, LayoutDashboard, List } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
 
 const applicantLinks = [
   { label: 'Dashboard', to: '/applicant/dashboard', icon: LayoutDashboard },
+  { label: 'My Applications', to: '/applicant/applications', icon: List },
   { label: 'Apply Loan', to: '/applicant/apply', icon: FileUp },
 ]
 

@@ -2,6 +2,8 @@ using System.Text;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Application.Services;
 using CapFinLoan.Application.Infrastructure;
+using CapFinLoan.Application.Infrastructure.Clients;
+using CapFinLoan.Application.Infrastructure.Options;
 using CapFinLoan.Application.Persistence;
 using CapFinLoan.Application.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -17,6 +19,19 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 	options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
+builder.Services.Configure<AdminServiceOptions>(builder.Configuration.GetSection(AdminServiceOptions.SectionName));
+
+builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddHttpClient<IAdminStatusHistoryClient, AdminStatusHistoryClient>((serviceProvider, client) =>
+{
+	var options = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<AdminServiceOptions>>().Value;
+	var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl)
+		? "http://localhost:5088"
+		: options.BaseUrl;
+
+	client.BaseAddress = new Uri(baseUrl);
+});
 
 builder.Services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
 builder.Services.AddScoped<ILoanApplicationService, LoanApplicationService>();

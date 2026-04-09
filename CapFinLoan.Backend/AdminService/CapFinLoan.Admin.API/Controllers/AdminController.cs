@@ -162,3 +162,31 @@ public class AdminController : ControllerBase
         }
     }
 }
+
+[ApiController]
+[ApiExplorerSettings(IgnoreApi = true)]
+[Route("internal/admin/applications")]
+[Authorize]
+public class InternalAdminApplicationsController : ControllerBase
+{
+    private readonly IAdminService _adminService;
+
+    public InternalAdminApplicationsController(IAdminService adminService)
+    {
+        _adminService = adminService;
+    }
+
+    [HttpGet("{id:guid}/history")]
+    public async Task<IActionResult> GetApplicationHistory(Guid id)
+    {
+        try
+        {
+            var result = await _adminService.GetApplicationStatusHistoryAsync(id);
+            return Ok(result);
+        }
+        catch (HttpRequestException ex)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = ex.Message });
+        }
+    }
+}

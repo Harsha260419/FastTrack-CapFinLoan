@@ -19,8 +19,13 @@ builder.WebHost.UseUrls("http://localhost:5088");
 builder.Services.AddControllers();
 builder.Services.AddHttpContextAccessor();
 
+var adminConnectionString =
+    builder.Configuration.GetConnectionString("AdminServiceConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:AdminServiceConnection or ConnectionStrings:DefaultConnection");
+
 builder.Services.AddDbContext<AdminDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(adminConnectionString));
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<ApplicationServiceOptions>(builder.Configuration.GetSection("ApplicationService"));

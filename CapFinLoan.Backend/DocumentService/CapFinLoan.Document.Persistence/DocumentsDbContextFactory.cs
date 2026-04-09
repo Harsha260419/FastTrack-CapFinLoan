@@ -8,7 +8,12 @@ public class DocumentsDbContextFactory : IDesignTimeDbContextFactory<DocumentsDb
     public DocumentsDbContext CreateDbContext(string[] args)
     {
         var optionsBuilder = new DbContextOptionsBuilder<DocumentsDbContext>();
-        optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=CapFinLoanDb;Trusted_Connection=True;");
+        var connectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__DocumentServiceConnection")
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? "Server=(localdb)\\MSSQLLocalDB;Database=CapFinLoanDocumentDb;Trusted_Connection=True;";
+
+        optionsBuilder.UseSqlServer(connectionString);
         return new DocumentsDbContext(optionsBuilder.Options);
     }
 }

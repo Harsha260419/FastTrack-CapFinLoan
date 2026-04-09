@@ -1,4 +1,4 @@
-import { Mail } from 'lucide-react'
+import { CheckCircle, Mail } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -124,20 +124,52 @@ function SignupPage() {
   }
 
   return (
-    <section className="flex min-h-screen w-full items-center justify-center bg-gray-100 p-4 sm:p-6">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-        <div className="absolute inset-y-0 left-0 w-2 bg-[#0f1f3d]" />
-
-        <div className="px-8 py-10">
-          <div className="mb-8 flex items-center gap-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-sm font-bold text-white">
-              CF
-            </span>
-            <div>
-              <p className="text-base font-semibold text-slate-900">CapFinLoan</p>
-              <h1 className="text-2xl font-bold tracking-tight text-slate-900">Create Account</h1>
+    <section className="min-h-screen w-full bg-gray-50">
+      <div className="flex min-h-screen w-full">
+        <aside className="relative hidden min-h-screen w-3/5 overflow-hidden bg-slate-900 p-10 md:flex md:flex-col">
+          <div className="relative z-10 flex h-full flex-col">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-white text-sm font-bold text-slate-900">
+                CF
+              </span>
+              <span className="text-xl font-semibold tracking-tight text-white">CapFinLoan</span>
             </div>
+
+            <div className="mt-16 max-w-xl">
+              <h1 className="text-5xl font-bold leading-tight text-white">Start your loan journey today</h1>
+
+              <ul className="mt-10 space-y-4">
+                {[
+                  'Apply in minutes, get approved faster',
+                  'Secure document upload & verification',
+                  'Real-time application status tracking',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-base text-slate-100">
+                    <CheckCircle size={20} className="mt-0.5 text-white" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-slate-700/30" />
+            <div className="pointer-events-none absolute bottom-16 right-10 h-28 w-28 rounded-2xl bg-slate-800/40" />
+            <div className="pointer-events-none absolute -right-10 top-32 h-44 w-44 rounded-full bg-slate-700/20" />
           </div>
+        </aside>
+
+        <div className="flex min-h-screen w-full items-center justify-center bg-gray-50 px-6 py-10 md:w-2/5 md:px-12 lg:px-16">
+          <div className="w-full max-w-md">
+            <div className="mb-8">
+              <div className="mb-5 flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white">
+                  CF
+                </span>
+                <p className="text-sm font-semibold text-slate-900">CapFinLoan</p>
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight text-slate-900">Create Account</h2>
+              <p className="mt-2 text-sm text-slate-600">Set up your account to start applying for loans.</p>
+            </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
@@ -147,7 +179,7 @@ function SignupPage() {
               <input
                 id="fullName"
                 type="text"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                 placeholder="John Doe"
                 {...register('fullName', {
                   required: 'Full name is required',
@@ -165,7 +197,7 @@ function SignupPage() {
               <input
                 id="email"
                 type="email"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                 placeholder="you@example.com"
                 {...register('email', {
                   required: 'Email is required',
@@ -187,7 +219,7 @@ function SignupPage() {
               <input
                 id="phoneNumber"
                 type="text"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                 placeholder="9876543210"
                 {...register('phoneNumber', {
                   required: 'Phone number is required',
@@ -209,7 +241,7 @@ function SignupPage() {
               <input
                 id="password"
                 type="password"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                 placeholder="Minimum 8 characters"
                 {...register('password', {
                   required: 'Password is required',
@@ -231,7 +263,7 @@ function SignupPage() {
               <input
                 id="confirmPassword"
                 type="password"
-                className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                 placeholder="Re-enter password"
                 {...register('confirmPassword', {
                   required: 'Confirm password is required',
@@ -260,7 +292,7 @@ function SignupPage() {
                   maxLength={6}
                   inputMode="numeric"
                   autoComplete="one-time-code"
-                  className="mx-auto block w-full max-w-[220px] rounded-lg border border-slate-300 px-3 py-2.5 text-center text-lg font-semibold tracking-[0.4em] text-slate-900 outline-none ring-blue-600 transition focus:border-blue-600 focus:ring-1"
+                  className="mx-auto block w-full max-w-[220px] rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-center text-lg font-semibold tracking-[0.4em] text-slate-900 outline-none ring-blue-200 transition focus:border-blue-500 focus:ring-2"
                   placeholder="000000"
                   {...register('otpCode', {
                     required: 'OTP is required',
@@ -280,7 +312,7 @@ function SignupPage() {
               type="button"
               onClick={handleSendOtp}
               disabled={isSendingOtp || countdown > 0}
-              className="w-full rounded-lg border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-xl border border-slate-900 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSendingOtp
                 ? 'Sending OTP...'
@@ -314,7 +346,7 @@ function SignupPage() {
             <button
               type="submit"
               disabled={isSubmitting || !hasSentOtp || String(otpCodeValue || '').length !== 6}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Creating account...' : 'Sign Up'}
             </button>
@@ -326,6 +358,7 @@ function SignupPage() {
               Login
             </Link>
           </p>
+        </div>
         </div>
       </div>
     </section>

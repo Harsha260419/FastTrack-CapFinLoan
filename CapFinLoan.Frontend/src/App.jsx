@@ -11,6 +11,7 @@ import AdminReportsPage from './pages/AdminReportsPage'
 import AdminReviewPage from './pages/admin/AdminReviewPage'
 import ApplicationDetailPage from './pages/applicant/ApplicationDetailPage'
 import ApplicantDashboardPage from './pages/applicant/DashboardPage'
+import MyApplicationsPage from './pages/applicant/MyApplicationsPage'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
@@ -27,6 +28,7 @@ function App() {
         <Route element={<RequireAuth />}>
           <Route path="/applicant" element={<ApplicantLayout />}>
             <Route path="dashboard" element={<ApplicantDashboardPage />} />
+            <Route path="applications" element={<MyApplicationsPage />} />
             <Route path="apply" element={<ApplicantApplyPage />} />
             <Route path="documents" element={<ApplicantDocumentsPage />} />
             <Route path="application/:id" element={<ApplicationDetailPage />} />

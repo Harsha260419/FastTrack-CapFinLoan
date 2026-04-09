@@ -91,6 +91,16 @@ function DashboardPage() {
     return { total, pendingActive, approved }
   }, [applications, totalCount])
 
+  const recentApplications = useMemo(() => {
+    return [...applications]
+      .sort((a, b) => {
+        const firstDate = new Date(a?.createdAt || a?.createdDate || 0).getTime()
+        const secondDate = new Date(b?.createdAt || b?.createdDate || 0).getTime()
+        return secondDate - firstDate
+      })
+      .slice(0, 5)
+  }, [applications])
+
   return (
     <section className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -123,6 +133,10 @@ function DashboardPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 px-4 py-3">
+          <h2 className="text-lg font-semibold text-slate-900">Recent Applications</h2>
+        </div>
+
         {isLoading ? <LoadingSpinner /> : null}
 
         {!isLoading && errorMessage ? (
@@ -133,7 +147,7 @@ function DashboardPage() {
           <p className="p-8 text-center text-sm text-slate-600">No applications found yet. Start by applying for a new loan.</p>
         ) : null}
 
-        {!isLoading && !errorMessage && applications.length > 0 ? (
+        {!isLoading && !errorMessage && recentApplications.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200">
               <thead className="bg-slate-50">
@@ -149,7 +163,7 @@ function DashboardPage() {
               </thead>
 
               <tbody className="divide-y divide-slate-100">
-                {applications.map((item) => {
+                {recentApplications.map((item) => {
                   const applicationId = item?.applicationId || '-'
                   const fullName = item?.fullName || item?.name || `${item?.firstName || ''} ${item?.lastName || ''}`.trim() || '-'
                   const amount = item?.loanAmount ?? item?.amount ?? '-'
@@ -194,6 +208,15 @@ function DashboardPage() {
                 })}
               </tbody>
             </table>
+
+            <div className="border-t border-slate-200 px-4 py-3 text-right">
+              <Link
+                to="/applicant/applications"
+                className="text-sm font-semibold text-blue-700 transition hover:text-blue-800"
+              >
+                View All Applications →
+              </Link>
+            </div>
           </div>
         ) : null}
       </div>

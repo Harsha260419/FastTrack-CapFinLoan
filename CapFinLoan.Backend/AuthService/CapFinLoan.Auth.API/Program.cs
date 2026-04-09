@@ -16,9 +16,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services
 builder.Services.AddControllers();
 
+var authConnectionString =
+    builder.Configuration.GetConnectionString("AuthServiceConnection")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException("Missing ConnectionStrings:AuthServiceConnection or ConnectionStrings:DefaultConnection");
+
 // Register DbContext
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(authConnectionString));
 
 // Configure JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
