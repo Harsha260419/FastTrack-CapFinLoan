@@ -11,9 +11,12 @@
     <ProjectReference Include="..\CapFinLoan.Auth.Infrastructure\CapFinLoan.Auth.Infrastructure.csproj" />
     <ProjectReference Include="..\CapFinLoan.Auth.Persistence\CapFinLoan.Auth.Persistence.csproj" />
     <ProjectReference Include="..\CapFinLoan.Auth.Domain\CapFinLoan.Auth.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\CapFinLoan.Messaging.Contracts\CapFinLoan.Messaging.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.0" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>

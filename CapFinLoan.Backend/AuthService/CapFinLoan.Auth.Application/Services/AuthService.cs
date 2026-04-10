@@ -2,6 +2,8 @@ using System.Text.RegularExpressions;
 using CapFinLoan.Auth.Application.DTOs;
 using CapFinLoan.Auth.Application.Interfaces;
 using CapFinLoan.Auth.Domain.Entities;
+using CapFinLoan.Messaging.Contracts;
+using MassTransit;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -13,7 +15,7 @@ public class AuthService : IAuthService
     private readonly ISignupOtpRepository _signupOtpRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITokenService _tokenService;
-    private readonly IEmailSender _emailSender;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     private const int SignupOtpValidityMinutes = 10;
     private const int SignupOtpResendCooldownSeconds = 60;
@@ -23,13 +25,13 @@ public class AuthService : IAuthService
         ISignupOtpRepository signupOtpRepository,
         IPasswordHasher passwordHasher,
         ITokenService tokenService,
-        IEmailSender emailSender)
+        IPublishEndpoint publishEndpoint)
     {
         _userRepository = userRepository;
         _signupOtpRepository = signupOtpRepository;
         _passwordHasher = passwordHasher;
         _tokenService = tokenService;
-        _emailSender = emailSender;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<AuthResponseDto> SendSignupOtpAsync(SendSignupOtpRequestDto request)
@@ -83,21 +85,13 @@ public class AuthService : IAuthService
         await _signupOtpRepository.AddAsync(otp);
         await _userRepository.SaveChangesAsync();
 
-        var subject = "Your CapFinLoan signup OTP";
-        var body = $"Your OTP is {otpCode}. It is valid for {SignupOtpValidityMinutes} minutes.";
-
-        try
+        await _publishEndpoint.Publish(new OtpRequestedEvent
         {
-            await _emailSender.SendAsync(normalizedEmail, subject, body);
-        }
-        catch
-        {
-            return new AuthResponseDto
-            {
-                Success = false,
-                Message = "Failed to send OTP email. Please try again later."
-            };
-        }
+            Email = normalizedEmail,
+            OtpCode = otpCode,
+            ApplicantName = BuildApplicantName(normalizedEmail),
+            ExpiresAt = otp.ExpiresAtUtc
+        });
 
         return new AuthResponseDto
         {
@@ -288,5 +282,22 @@ public class AuthService : IAuthService
         var bytes = Encoding.UTF8.GetBytes(otpCode);
         var hashBytes = SHA256.HashData(bytes);
         return Convert.ToHexString(hashBytes);
+    }
+
+    private static string BuildApplicantName(string email)
+    {
+        var atIndex = email.IndexOf('@');
+        if (atIndex <= 0)
+        {
+            return "Applicant";
+        }
+
+        var localPart = email[..atIndex].Trim();
+        if (string.IsNullOrWhiteSpace(localPart))
+        {
+            return "Applicant";
+        }
+
+        return localPart;
     }
 }

@@ -1,22 +1,35 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using CapFinLoan.Messaging.Contracts.ApplicationStatus;
 using CapFinLoan.Document.Application.DTOs;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Infrastructure.Options;
+using MassTransit;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace CapFinLoan.Document.Infrastructure.Clients;
 
 public class ApplicationServiceClient : IApplicationServiceClient
 {
+    private static readonly TimeSpan MessagingPublishTimeout = TimeSpan.FromSeconds(4);
+
     private readonly HttpClient _httpClient;
     private readonly ApplicationServiceOptions _options;
+    private readonly IRequestClient<UpdateApplicationStatusCommand> _updateStatusRequestClient;
+    private readonly ILogger<ApplicationServiceClient> _logger;
 
-    public ApplicationServiceClient(HttpClient httpClient, IOptions<ApplicationServiceOptions> options)
+    public ApplicationServiceClient(
+        HttpClient httpClient,
+        IOptions<ApplicationServiceOptions> options,
+        IRequestClient<UpdateApplicationStatusCommand> updateStatusRequestClient,
+        ILogger<ApplicationServiceClient> logger)
     {
         _httpClient = httpClient;
         _options = options.Value;
+        _updateStatusRequestClient = updateStatusRequestClient;
+        _logger = logger;
     }
 
     public async Task<bool> ValidateApplicationAccessAsync(
@@ -60,6 +73,50 @@ public class ApplicationServiceClient : IApplicationServiceClient
             return;
         }
 
+        var mode = string.IsNullOrWhiteSpace(_options.StatusSyncMode)
+            ? ApplicationServiceOptions.HttpOnlyMode
+            : _options.StatusSyncMode.Trim();
+
+        if (mode.Equals(ApplicationServiceOptions.HttpOnlyMode, StringComparison.OrdinalIgnoreCase))
+        {
+            await UpdateStatusOverHttpAsync(request, bearerToken, cancellationToken);
+            return;
+        }
+
+        if (mode.Equals(ApplicationServiceOptions.DualWriteMode, StringComparison.OrdinalIgnoreCase))
+        {
+            await UpdateStatusOverHttpAsync(request, bearerToken, cancellationToken);
+
+            try
+            {
+                await UpdateStatusOverMessagingAsync(request, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "RabbitMQ dual-write status sync failed for application {ApplicationId}; HTTP path succeeded.",
+                    request.ApplicationId);
+            }
+
+            return;
+        }
+
+        if (mode.Equals(ApplicationServiceOptions.RabbitMqPrimaryMode, StringComparison.OrdinalIgnoreCase))
+        {
+            await UpdateStatusOverMessagingAsync(request, cancellationToken);
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Unsupported ApplicationService:StatusSyncMode '{_options.StatusSyncMode}'. Supported values: " +
+            $"{ApplicationServiceOptions.HttpOnlyMode}, {ApplicationServiceOptions.DualWriteMode}, {ApplicationServiceOptions.RabbitMqPrimaryMode}.");
+    }
+
+    private async Task UpdateStatusOverHttpAsync(
+        ApplicationDocumentStatusUpdateDto request,
+        string? bearerToken,
+        CancellationToken cancellationToken)
+    {
         var path = ResolvePath(_options.DocumentStatusPath, request.ApplicationId);
         using var httpRequest = new HttpRequestMessage(HttpMethod.Patch, path)
         {
@@ -76,6 +133,43 @@ public class ApplicationServiceClient : IApplicationServiceClient
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
         throw new HttpRequestException($"Document status sync failed: {(int)response.StatusCode} {responseBody}");
+    }
+
+    private async Task UpdateStatusOverMessagingAsync(
+        ApplicationDocumentStatusUpdateDto request,
+        CancellationToken cancellationToken)
+    {
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(MessagingPublishTimeout);
+
+        var command = new UpdateApplicationStatusCommand
+        {
+            ApplicationId = request.ApplicationId,
+            Status = request.Status,
+            CorrelationId = Guid.NewGuid().ToString("N")
+        };
+
+        Response<UpdateApplicationStatusResult> response;
+
+        try
+        {
+            response = await _updateStatusRequestClient.GetResponse<UpdateApplicationStatusResult>(command, timeoutCts.Token);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"RabbitMQ publish timed out after {MessagingPublishTimeout.TotalSeconds:0} seconds.",
+                ex);
+        }
+
+        if (!response.Message.Success)
+        {
+            throw new InvalidOperationException($"RabbitMQ status sync failed: {response.Message.Message}");
+        }
+
+        _logger.LogInformation(
+            "RabbitMQ publish succeeded for application {ApplicationId}",
+            request.ApplicationId);
     }
 
     private static void AddBearerToken(HttpRequestMessage request, string? bearerToken)

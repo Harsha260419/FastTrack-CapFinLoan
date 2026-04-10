@@ -2,6 +2,8 @@ using CapFinLoan.Admin.Application.DTOs;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Constants;
 using CapFinLoan.Admin.Domain.Entities;
+using CapFinLoan.Messaging.Contracts;
+using MassTransit;
 
 namespace CapFinLoan.Admin.Application.Services;
 
@@ -11,17 +13,20 @@ public class AdminService : IAdminService
     private readonly IDocumentClient _documentClient;
     private readonly IDecisionRepository _decisionRepository;
     private readonly IStatusHistoryRepository _statusHistoryRepository;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public AdminService(
         IApplicationClient applicationClient,
         IDocumentClient documentClient,
         IDecisionRepository decisionRepository,
-        IStatusHistoryRepository statusHistoryRepository)
+        IStatusHistoryRepository statusHistoryRepository,
+        IPublishEndpoint publishEndpoint)
     {
         _applicationClient = applicationClient;
         _documentClient = documentClient;
         _decisionRepository = decisionRepository;
         _statusHistoryRepository = statusHistoryRepository;
+        _publishEndpoint = publishEndpoint;
     }
 
     public async Task<IReadOnlyList<AdminApplicationQueueItemDto>> GetApplicationsAsync()
@@ -180,6 +185,32 @@ public class AdminService : IAdminService
         }
 
         await _decisionRepository.SaveChangesAsync();
+
+        if (normalizedDecision is AdminStatusConstants.Approved or AdminStatusConstants.Rejected)
+        {
+            var applicationDetails = await _applicationClient.GetApplicationByIdAsync(applicationId)
+                ?? throw new KeyNotFoundException("Application not found.");
+
+            var sanctionAmount = normalizedDecision == AdminStatusConstants.Approved
+                ? request.SanctionAmount ?? 0m
+                : 0m;
+
+            var interestRate = normalizedDecision == AdminStatusConstants.Approved
+                ? Convert.ToDouble(request.InterestRate ?? 0m)
+                : 0d;
+
+            await _publishEndpoint.Publish(new DecisionMadeEvent
+            {
+                ApplicationId = existingDecision.ApplicationId,
+                ApplicantName = applicationDetails.FullName,
+                ApplicantEmail = applicationDetails.Email,
+                Decision = normalizedDecision,
+                Remarks = request.Remarks,
+                SanctionAmount = sanctionAmount,
+                InterestRate = interestRate,
+                DecidedAt = existingDecision.DecidedAt
+            });
+        }
 
         return new DecisionResponseDto
         {

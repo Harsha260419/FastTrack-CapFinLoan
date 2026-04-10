@@ -7,6 +7,8 @@ using CapFinLoan.Document.Infrastructure;
 using CapFinLoan.Document.Infrastructure.Clients;
 using CapFinLoan.Document.Infrastructure.Options;
 using CapFinLoan.Document.Infrastructure.Storage;
+using CapFinLoan.Messaging.Contracts.ApplicationStatus;
+using MassTransit;
 using CapFinLoan.Document.Persistence;
 using CapFinLoan.Document.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -25,10 +27,41 @@ builder.Services.AddDbContext<DocumentsDbContext>(options =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<FileStorageOptions>(builder.Configuration.GetSection(FileStorageOptions.SectionName));
 builder.Services.Configure<ApplicationServiceOptions>(builder.Configuration.GetSection(ApplicationServiceOptions.SectionName));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 
 builder.Services.AddScoped<IDocumentRepository, DocumentRepository>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+
+var documentRabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionName).Get<RabbitMqOptions>()
+	?? new RabbitMqOptions();
+
+builder.Services.AddMassTransit(configurator =>
+{
+	configurator.AddRequestClient<UpdateApplicationStatusCommand>();
+
+	if (!documentRabbitMqOptions.Enabled)
+	{
+		configurator.UsingInMemory((context, cfg) =>
+		{
+			cfg.ConfigureEndpoints(context);
+		});
+		return;
+	}
+
+	configurator.UsingRabbitMq((context, cfg) =>
+	{
+		cfg.UseMessageRetry(retry => retry.None());
+
+		cfg.Host(documentRabbitMqOptions.Host, documentRabbitMqOptions.Port, documentRabbitMqOptions.VirtualHost, host =>
+		{
+			host.Username(documentRabbitMqOptions.Username);
+			host.Password(documentRabbitMqOptions.Password);
+		});
+
+		cfg.ConfigureEndpoints(context);
+	});
+});
 
 builder.Services.AddHttpClient<IApplicationServiceClient, ApplicationServiceClient>((serviceProvider, client) =>
 {

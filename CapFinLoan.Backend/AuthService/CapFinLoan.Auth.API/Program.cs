@@ -6,6 +6,7 @@ using CapFinLoan.Auth.Infrastructure.Options;
 using CapFinLoan.Auth.Infrastructure.Services;
 using CapFinLoan.Auth.Persistence;
 using CapFinLoan.Auth.Persistence.Repositories;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -27,14 +28,28 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 
 // Configure JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
-builder.Services.Configure<SmtpSettings>(builder.Configuration.GetSection("SmtpSettings"));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+
+var rabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionName).Get<RabbitMqOptions>()
+    ?? new RabbitMqOptions();
+
+builder.Services.AddMassTransit(configurator =>
+{
+    configurator.UsingRabbitMq((_, cfg) =>
+    {
+        cfg.Host(rabbitMqOptions.Host, rabbitMqOptions.Port, rabbitMqOptions.VirtualHost, host =>
+        {
+            host.Username(rabbitMqOptions.Username);
+            host.Password(rabbitMqOptions.Password);
+        });
+    });
+});
 
 // Register application services (DI)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISignupOtpRepository, SignupOtpRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
-builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Get JWT settings for authentication configuration

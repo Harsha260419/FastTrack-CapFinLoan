@@ -6,6 +6,7 @@ using CapFinLoan.Admin.Infrastructure.Clients;
 using CapFinLoan.Admin.Infrastructure.Options;
 using CapFinLoan.Admin.Persistence;
 using CapFinLoan.Admin.Persistence.Repositories;
+using MassTransit;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,22 @@ builder.Services.AddDbContext<AdminDbContext>(options =>
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<ApplicationServiceOptions>(builder.Configuration.GetSection("ApplicationService"));
 builder.Services.Configure<DocumentServiceOptions>(builder.Configuration.GetSection("DocumentService"));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+
+var rabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionName).Get<RabbitMqOptions>()
+    ?? new RabbitMqOptions();
+
+builder.Services.AddMassTransit(configurator =>
+{
+    configurator.UsingRabbitMq((_, cfg) =>
+    {
+        cfg.Host(rabbitMqOptions.Host, rabbitMqOptions.Port, rabbitMqOptions.VirtualHost, host =>
+        {
+            host.Username(rabbitMqOptions.Username);
+            host.Password(rabbitMqOptions.Password);
+        });
+    });
+});
 
 builder.Services.AddScoped<IDecisionRepository, DecisionRepository>();
 builder.Services.AddScoped<IStatusHistoryRepository, StatusHistoryRepository>();

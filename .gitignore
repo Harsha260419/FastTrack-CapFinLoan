@@ -73,7 +73,13 @@ npm-debug.log*
 CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Uploads/
 
 # Local helper scripts
-start-services.ps1
+*.ps1
+*.sh
+*.bat
+*.cmd
 
 # Temporary local secret in Auth service config
 CapFinLoan.Backend/AuthService/CapFinLoan.Auth.API/appsettings.json
+
+# Temporary local secret in Notification service config
+CapFinLoan.Backend/NotificationService/CapFinLoan.Notification.API/appsettings.json

@@ -10,9 +10,12 @@
     <ProjectReference Include="..\CapFinLoan.Application.Application\CapFinLoan.Application.Application.csproj" />
     <ProjectReference Include="..\CapFinLoan.Application.Infrastructure\CapFinLoan.Application.Infrastructure.csproj" />
     <ProjectReference Include="..\CapFinLoan.Application.Persistence\CapFinLoan.Application.Persistence.csproj" />
+    <ProjectReference Include="..\..\Shared\CapFinLoan.Messaging.Contracts\CapFinLoan.Messaging.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="MassTransit" Version="8.5.0" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="8.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

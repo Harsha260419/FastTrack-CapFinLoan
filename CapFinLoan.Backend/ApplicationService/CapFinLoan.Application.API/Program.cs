@@ -1,9 +1,11 @@
 using System.Text;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Application.Services;
+using CapFinLoan.Application.API.Consumers;
 using CapFinLoan.Application.Infrastructure;
 using CapFinLoan.Application.Infrastructure.Clients;
 using CapFinLoan.Application.Infrastructure.Options;
+using MassTransit;
 using CapFinLoan.Application.Persistence;
 using CapFinLoan.Application.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,6 +26,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<AdminServiceOptions>(builder.Configuration.GetSection(AdminServiceOptions.SectionName));
+builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
 
 builder.Services.AddHttpContextAccessor();
 
@@ -39,6 +42,35 @@ builder.Services.AddHttpClient<IAdminStatusHistoryClient, AdminStatusHistoryClie
 
 builder.Services.AddScoped<ILoanApplicationRepository, LoanApplicationRepository>();
 builder.Services.AddScoped<ILoanApplicationService, LoanApplicationService>();
+
+var applicationRabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionName).Get<RabbitMqOptions>()
+	?? new RabbitMqOptions();
+
+builder.Services.AddMassTransit(configurator =>
+{
+	configurator.AddConsumer<UpdateApplicationStatusCommandConsumer, UpdateApplicationStatusCommandConsumerDefinition>();
+	configurator.AddConsumer<UpdateApplicationStatusFaultConsumer>();
+
+	if (!applicationRabbitMqOptions.Enabled)
+	{
+		configurator.UsingInMemory((context, cfg) =>
+		{
+			cfg.ConfigureEndpoints(context);
+		});
+		return;
+	}
+
+	configurator.UsingRabbitMq((context, cfg) =>
+	{
+		cfg.Host(applicationRabbitMqOptions.Host, applicationRabbitMqOptions.Port, applicationRabbitMqOptions.VirtualHost, host =>
+		{
+			host.Username(applicationRabbitMqOptions.Username);
+			host.Password(applicationRabbitMqOptions.Password);
+		});
+
+		cfg.ConfigureEndpoints(context);
+	});
+});
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()
 	?? throw new InvalidOperationException("JwtSettings configuration is missing.");
