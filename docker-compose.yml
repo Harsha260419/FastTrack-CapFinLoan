@@ -1,0 +1,186 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sqlserver
+    ports:
+      - "1433:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      SA_PASSWORD: ${SA_PASSWORD}
+      MSSQL_PID: Express
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U ${SA_USER} -P \"${SA_PASSWORD}\" -Q \"SELECT 1\" -C"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  authservice:
+    container_name: capfinloan-authservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/AuthService/CapFinLoan.Auth.API/Dockerfile
+    ports:
+      - "5025:5025"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5025
+      ConnectionStrings__AuthServiceConnection: Server=sqlserver,1433;Database=CapFinLoanAuthDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapFinLoanAuthDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+    restart: unless-stopped
+
+  applicationservice:
+    container_name: capfinloan-applicationservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/ApplicationService/CapFinLoan.Application.API/Dockerfile
+    ports:
+      - "5256:5256"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5256
+      ConnectionStrings__ApplicationServiceConnection: Server=sqlserver,1433;Database=CapFinLoanAppDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      AdminService__BaseUrl: http://adminservice:5088
+    restart: unless-stopped
+
+  documentservice:
+    container_name: capfinloan-documentservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Dockerfile
+    ports:
+      - "5262:5262"
+    volumes:
+      - ./CapFinLoan.Backend/DocumentService/CapFinLoan.Document.API/Uploads:/app/Uploads
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5262
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapFinLoanDocsDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      ApplicationService__BaseUrl: http://applicationservice:5256
+    restart: unless-stopped
+
+  adminservice:
+    container_name: capfinloan-adminservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/AdminService/CapFinLoan.Admin.API/Dockerfile
+    ports:
+      - "5088:5088"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5088
+      ConnectionStrings__AdminServiceConnection: Server=sqlserver,1433;Database=CapFinLoanAdminDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapFinLoanAdminDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      ApplicationService__BaseUrl: http://applicationservice:5256
+      DocumentService__BaseUrl: http://documentservice:5262
+    restart: unless-stopped
+
+  notificationservice:
+    container_name: capfinloan-notificationservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/NotificationService/CapFinLoan.Notification.API/Dockerfile
+    ports:
+      - "5095:5095"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5095
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      Email__SenderEmail: ${EMAIL_SENDER}
+      Email__AppPassword: ${EMAIL_APP_PASSWORD}
+    restart: unless-stopped
+
+  gateway:
+    container_name: capfinloan-gateway
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/ApiGateway/CapFinLoan.Gateway.API/Dockerfile
+    ports:
+      - "8002:8002"
+    depends_on:
+      authservice:
+        condition: service_started
+      applicationservice:
+        condition: service_started
+      documentservice:
+        condition: service_started
+      adminservice:
+        condition: service_started
+      notificationservice:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8002
+    restart: unless-stopped
+
+  frontend:
+    container_name: capfinloan-frontend
+    build:
+      context: CapFinLoan.Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      gateway:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  sqlserver_data:

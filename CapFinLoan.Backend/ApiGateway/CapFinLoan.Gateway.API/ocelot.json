@@ -5,7 +5,7 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/auth/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5025 }],
+      "DownstreamHostAndPorts": [{ "Host": "authservice", "Port": 5025 }],
       "SwaggerKey": "auth"
     },
     {
@@ -13,7 +13,7 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/applications/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5256 }],
+      "DownstreamHostAndPorts": [{ "Host": "applicationservice", "Port": 5256 }],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "GatewayJwt",
         "AllowedScopes": []
@@ -25,7 +25,7 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/documents/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5262 }],
+      "DownstreamHostAndPorts": [{ "Host": "documentservice", "Port": 5262 }],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "GatewayJwt",
         "AllowedScopes": []
@@ -37,7 +37,7 @@
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/admin/{everything}",
       "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [{ "Host": "localhost", "Port": 5088 }],
+      "DownstreamHostAndPorts": [{ "Host": "adminservice", "Port": 5088 }],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "GatewayJwt",
         "AllowedScopes": []
@@ -56,7 +56,7 @@
         {
           "Name": "Auth Service",
           "Version": "v1",
-          "Url": "http://localhost:5025/swagger/v1/swagger.json"
+          "Url": "http://authservice:5025/swagger/v1/swagger.json"
         }
       ]
     },
@@ -67,7 +67,7 @@
         {
           "Name": "Application Service",
           "Version": "v1",
-          "Url": "http://localhost:5256/swagger/v1/swagger.json"
+          "Url": "http://applicationservice:5256/swagger/v1/swagger.json"
         }
       ]
     },
@@ -78,7 +78,7 @@
         {
           "Name": "Document Service",
           "Version": "v1",
-          "Url": "http://localhost:5262/swagger/v1/swagger.json"
+          "Url": "http://documentservice:5262/swagger/v1/swagger.json"
         }
       ]
     },
@@ -89,7 +89,7 @@
         {
           "Name": "Admin Service",
           "Version": "v1",
-          "Url": "http://localhost:5088/swagger/v1/swagger.json"
+          "Url": "http://adminservice:5088/swagger/v1/swagger.json"
         }
       ]
     }
