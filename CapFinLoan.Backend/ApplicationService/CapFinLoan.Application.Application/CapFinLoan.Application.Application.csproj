@@ -10,4 +10,8 @@
     <ProjectReference Include="..\CapFinLoan.Application.Domain\CapFinLoan.Application.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

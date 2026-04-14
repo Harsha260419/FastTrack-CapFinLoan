@@ -1,8 +1,10 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
-namespace CapFinLoan.Document.API.Extensions;
+namespace CapFinLoan.Document.Application.Middleware;
 
 public class ExceptionHandlingMiddleware
 {
@@ -41,7 +43,7 @@ public class ExceptionHandlingMiddleware
             UnauthorizedAccessException => (HttpStatusCode.Forbidden, exception.Message),
             KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),
             HttpRequestException => (HttpStatusCode.BadGateway, exception.Message),
-            DbUpdateException => (HttpStatusCode.Conflict, "Database update failed. Check duplicate document type for this application or invalid data."),
+            _ when exception.GetType().Name == "DbUpdateException" => (HttpStatusCode.Conflict, "Database update failed. Check duplicate document type for this application or invalid data."),
             IOException => (HttpStatusCode.InternalServerError, "File storage operation failed. Please retry upload."),
             _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred.")
         };

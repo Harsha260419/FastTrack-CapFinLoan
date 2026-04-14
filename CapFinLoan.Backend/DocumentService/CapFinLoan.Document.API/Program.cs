@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using System.Text;
-using CapFinLoan.Document.API.Extensions;
+using CapFinLoan.Document.Application.Middleware;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
 using CapFinLoan.Document.Infrastructure;

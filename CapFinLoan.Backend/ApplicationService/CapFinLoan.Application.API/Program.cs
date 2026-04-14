@@ -1,5 +1,6 @@
 using System.Text;
 using CapFinLoan.Application.Application.Interfaces;
+using CapFinLoan.Application.Application.Middleware;
 using CapFinLoan.Application.Application.Services;
 using CapFinLoan.Application.API.Consumers;
 using CapFinLoan.Application.Infrastructure;
@@ -125,6 +126,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

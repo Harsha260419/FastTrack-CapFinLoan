@@ -1,5 +1,6 @@
 using System.Text;
 using CapFinLoan.Auth.Application.Interfaces;
+using CapFinLoan.Auth.Application.Middleware;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Infrastructure;
 using CapFinLoan.Auth.Infrastructure.Options;
@@ -122,6 +123,8 @@ else
 {
     app.UseHttpsRedirection();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
