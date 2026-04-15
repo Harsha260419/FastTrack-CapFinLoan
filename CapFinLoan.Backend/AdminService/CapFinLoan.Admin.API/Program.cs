@@ -1,4 +1,5 @@
 using System.Text;
+using CapFinLoan.Admin.API.Consumers;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Middleware;
 using CapFinLoan.Admin.Application.Services;
@@ -39,6 +40,9 @@ var rabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionNa
 
 builder.Services.AddMassTransit(configurator =>
 {
+    configurator.AddConsumer<DocumentsVerifiedEventConsumer, DocumentsVerifiedEventConsumerDefinition>();
+    configurator.AddConsumer<DocumentsVerifiedEventFaultConsumer>();
+
     configurator.UsingRabbitMq((_, cfg) =>
     {
         cfg.Host(rabbitMqOptions.Host, rabbitMqOptions.Port, rabbitMqOptions.VirtualHost, host =>

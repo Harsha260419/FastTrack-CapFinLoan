@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using CapFinLoan.Document.API.Consumers;
 using CapFinLoan.Document.Application.Middleware;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Application.Services;
@@ -38,6 +39,8 @@ var documentRabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.S
 
 builder.Services.AddMassTransit(configurator =>
 {
+	configurator.AddConsumer<ApplicationSubmittedEventConsumer, ApplicationSubmittedEventConsumerDefinition>();
+	configurator.AddConsumer<ApplicationSubmittedEventFaultConsumer>();
 	configurator.AddRequestClient<UpdateApplicationStatusCommand>();
 
 	if (!documentRabbitMqOptions.Enabled)

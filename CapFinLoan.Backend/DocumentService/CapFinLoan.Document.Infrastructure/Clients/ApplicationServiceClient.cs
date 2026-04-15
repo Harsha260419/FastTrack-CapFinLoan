@@ -66,6 +66,7 @@ public class ApplicationServiceClient : IApplicationServiceClient
     public async Task UpdateDocumentStatusAsync(
         ApplicationDocumentStatusUpdateDto request,
         string? bearerToken,
+        string? correlationId = null,
         CancellationToken cancellationToken = default)
     {
         if (!_options.StatusSyncEnabled)
@@ -89,7 +90,7 @@ public class ApplicationServiceClient : IApplicationServiceClient
 
             try
             {
-                await UpdateStatusOverMessagingAsync(request, cancellationToken);
+                await UpdateStatusOverMessagingAsync(request, correlationId, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -103,7 +104,7 @@ public class ApplicationServiceClient : IApplicationServiceClient
 
         if (mode.Equals(ApplicationServiceOptions.RabbitMqPrimaryMode, StringComparison.OrdinalIgnoreCase))
         {
-            await UpdateStatusOverMessagingAsync(request, cancellationToken);
+            await UpdateStatusOverMessagingAsync(request, correlationId, cancellationToken);
             return;
         }
 
@@ -137,6 +138,7 @@ public class ApplicationServiceClient : IApplicationServiceClient
 
     private async Task UpdateStatusOverMessagingAsync(
         ApplicationDocumentStatusUpdateDto request,
+        string? correlationId,
         CancellationToken cancellationToken)
     {
         using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -146,7 +148,9 @@ public class ApplicationServiceClient : IApplicationServiceClient
         {
             ApplicationId = request.ApplicationId,
             Status = request.Status,
-            CorrelationId = Guid.NewGuid().ToString("N")
+            CorrelationId = string.IsNullOrWhiteSpace(correlationId)
+                ? Guid.NewGuid().ToString("N")
+                : correlationId
         };
 
         Response<UpdateApplicationStatusResult> response;

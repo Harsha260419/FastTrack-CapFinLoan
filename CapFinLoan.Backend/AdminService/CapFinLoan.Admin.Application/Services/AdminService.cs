@@ -37,7 +37,10 @@ public class AdminService : IAdminService
         {
             ApplicationId = a.ApplicationId,
             ApplicantName = a.FullName,
+            Email = a.Email,
+            PhoneNumber = a.PhoneNumber,
             LoanAmount = a.LoanAmount,
+            TenureMonths = a.TenureMonths,
             Status = AdminStatusConstants.Normalize(a.Status),
             CreatedDate = a.CreatedAt
         }).ToList();
@@ -185,6 +188,17 @@ public class AdminService : IAdminService
         }
 
         await _decisionRepository.SaveChangesAsync();
+
+        if (normalizedDecision == AdminStatusConstants.UnderReview)
+        {
+            await _publishEndpoint.Publish(new ApplicationUnderReviewEvent
+            {
+                ApplicationId = existingDecision.ApplicationId,
+                CorrelationId = Guid.NewGuid().ToString("N"),
+                OccurredAtUtc = DateTime.UtcNow,
+                Source = "AdminService"
+            });
+        }
 
         if (normalizedDecision is AdminStatusConstants.Approved or AdminStatusConstants.Rejected)
         {

@@ -2,6 +2,9 @@ using CapFinLoan.Document.Application.DTOs;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Domain.Entities;
 using CapFinLoan.Document.Domain.Enums;
+using CapFinLoan.Messaging.Contracts;
+using MassTransit;
+using Microsoft.Extensions.Logging;
 using DocumentEntity = CapFinLoan.Document.Domain.Entities.Document;
 
 namespace CapFinLoan.Document.Application.Services;
@@ -22,15 +25,21 @@ public class DocumentService : IDocumentService
     private readonly IDocumentRepository _documentRepository;
     private readonly IFileStorageService _fileStorageService;
     private readonly IApplicationServiceClient _applicationServiceClient;
+    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ILogger<DocumentService> _logger;
 
     public DocumentService(
         IDocumentRepository documentRepository,
         IFileStorageService fileStorageService,
-        IApplicationServiceClient applicationServiceClient)
+        IApplicationServiceClient applicationServiceClient,
+        IPublishEndpoint publishEndpoint,
+        ILogger<DocumentService> logger)
     {
         _documentRepository = documentRepository;
         _fileStorageService = fileStorageService;
         _applicationServiceClient = applicationServiceClient;
+        _publishEndpoint = publishEndpoint;
+        _logger = logger;
     }
 
     public async Task<DocumentResponseDto> UploadDocumentAsync(
@@ -254,6 +263,8 @@ public class DocumentService : IDocumentService
 
     private async Task SyncApplicationStatusAsync(Guid applicationId, string? bearerToken, CancellationToken cancellationToken)
     {
+        var correlationId = Guid.NewGuid().ToString("N");
+
         var documents = await _documentRepository.GetByApplicationIdAsync(applicationId);
 
         var documentsByType = documents
@@ -285,7 +296,28 @@ public class DocumentService : IDocumentService
             Status = targetStatus
         };
 
-        await _applicationServiceClient.UpdateDocumentStatusAsync(request, bearerToken, cancellationToken);
+        await _applicationServiceClient.UpdateDocumentStatusAsync(request, bearerToken, correlationId, cancellationToken);
+
+        if (string.Equals(targetStatus, DocsVerifiedStatus, StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                await _publishEndpoint.Publish(new DocumentsVerifiedEvent
+                {
+                    ApplicationId = applicationId,
+                    CorrelationId = correlationId,
+                    OccurredAtUtc = DateTime.UtcNow,
+                    Source = "DocumentService"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "DocumentsVerifiedEvent publish failed for application {ApplicationId}. CorrelationId: {CorrelationId}",
+                    applicationId,
+                    correlationId);
+            }
+        }
     }
 
     private static DocumentResponseDto MapToResponse(DocumentEntity document)

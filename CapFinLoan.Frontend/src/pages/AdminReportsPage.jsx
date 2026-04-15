@@ -48,14 +48,14 @@ function buildApplicationsCsvRows(applications) {
 
   applications.forEach((item) => {
     rows.push([
-      item?.applicationId || '',
-      item?.applicantName || item?.fullName || '',
-      item?.email || '',
-      item?.phoneNumber || item?.phone || '',
+      item?.applicationId ?? '',
+      item?.applicantName ?? '',
+      item?.email ?? '',
+      item?.phoneNumber ?? '',
       item?.loanAmount ?? '',
       item?.tenureMonths ?? '',
-      item?.status || '',
-      formatSubmittedDate(item?.createdDate || item?.createdAt),
+      item?.status ?? '',
+      formatSubmittedDate(item?.createdDate),
     ])
   })
 
@@ -159,16 +159,11 @@ function AdminReportsPage() {
 
     try {
       const response = await axiosInstance.get('/gateway/admin/applications')
-      const payload = response?.data
-      const rows = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload?.items)
-          ? payload.items
-          : Array.isArray(payload?.data)
-            ? payload.data
-            : []
+      const items = Array.isArray(response?.data)
+        ? response.data
+        : (response?.data?.items ?? [])
 
-      const csvRows = buildApplicationsCsvRows(rows)
+      const csvRows = buildApplicationsCsvRows(items)
       const csv = toCsvString(csvRows)
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)

@@ -1,7 +1,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using CapFinLoan.Messaging.Contracts;
 using CapFinLoan.Application.Application.DTOs;
 using CapFinLoan.Application.Application.Interfaces;
+using MassTransit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,10 +15,17 @@ namespace CapFinLoan.Application.API.Controllers;
 public class ApplicationsController : ControllerBase
 {
     private readonly ILoanApplicationService _loanApplicationService;
+    private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ILogger<ApplicationsController> _logger;
 
-    public ApplicationsController(ILoanApplicationService loanApplicationService)
+    public ApplicationsController(
+        ILoanApplicationService loanApplicationService,
+        IPublishEndpoint publishEndpoint,
+        ILogger<ApplicationsController> logger)
     {
         _loanApplicationService = loanApplicationService;
+        _publishEndpoint = publishEndpoint;
+        _logger = logger;
     }
 
     [HttpPost]
@@ -71,6 +80,27 @@ public class ApplicationsController : ControllerBase
         {
             var userId = GetUserIdFromToken();
             var result = await _loanApplicationService.SubmitApplicationAsync(userId, id, request);
+
+            var correlationId = Guid.NewGuid().ToString("N");
+            try
+            {
+                await _publishEndpoint.Publish(new ApplicationSubmittedEvent
+                {
+                    ApplicationId = id,
+                    UserId = userId,
+                    CorrelationId = correlationId,
+                    OccurredAtUtc = DateTime.UtcNow,
+                    Source = "ApplicationService"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex,
+                    "ApplicationSubmittedEvent publish failed for application {ApplicationId}. CorrelationId: {CorrelationId}",
+                    id,
+                    correlationId);
+            }
+
             return Ok(result);
         }
         catch (ArgumentException ex)
