@@ -84,7 +84,7 @@ erDiagram
     }
 
     AUTH_USERS ||--o{ CORE_LOAN_APPLICATIONS : "logical via UserId"
-    CORE_LOAN_APPLICATIONS ||--o{ DOCS_DOCUMENTS : "logical via ApplicationId"
+    CORE_LOAN_APPLICATIONS ||--o{ DOCS_DOCUMENTS : "logical via ApplicationId + status sync"
     CORE_LOAN_APPLICATIONS ||--o| ADMIN_DECISIONS : "logical via ApplicationId"
     CORE_LOAN_APPLICATIONS ||--o{ ADMIN_APPLICATION_STATUS_HISTORY : "logical via ApplicationId"
     AUTH_USERS ||--o{ ADMIN_DECISIONS : "logical via AdminUserId"

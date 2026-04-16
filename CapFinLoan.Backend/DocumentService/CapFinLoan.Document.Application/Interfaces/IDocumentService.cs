@@ -4,6 +4,7 @@ namespace CapFinLoan.Document.Application.Interfaces;
 
 public interface IDocumentService
 {
+    Task TriggerInitialStatusSyncAsync(Guid applicationId, string correlationId, CancellationToken cancellationToken = default);
     Task<DocumentResponseDto> UploadDocumentAsync(Guid userId, UploadDocumentDto request, string? bearerToken, CancellationToken cancellationToken = default);
     Task<DocumentResponseDto> ReplaceDocumentAsync(Guid userId, Guid documentId, UploadDocumentDto request, string? bearerToken, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<DocumentResponseDto>> GetDocumentsByApplicationIdAsync(Guid userId, bool isAdmin, Guid applicationId, string? bearerToken, CancellationToken cancellationToken = default);

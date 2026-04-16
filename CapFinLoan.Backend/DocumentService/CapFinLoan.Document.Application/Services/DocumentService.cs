@@ -43,6 +43,31 @@ public class DocumentService : IDocumentService
         _logger = logger;
     }
 
+    public async Task TriggerInitialStatusSyncAsync(Guid applicationId, string correlationId, CancellationToken cancellationToken = default)
+    {
+        if (applicationId == Guid.Empty)
+        {
+            throw new ValidationException("ApplicationId is required.");
+        }
+
+        var request = new ApplicationDocumentStatusUpdateDto
+        {
+            ApplicationId = applicationId,
+            Status = DocsPendingStatus
+        };
+
+        await _applicationServiceClient.UpdateDocumentStatusAsync(
+            request,
+            bearerToken: null,
+            correlationId,
+            cancellationToken);
+
+        _logger.LogInformation(
+            "Initial status sync triggered for application {ApplicationId}. CorrelationId: {CorrelationId}",
+            applicationId,
+            correlationId);
+    }
+
     public async Task<DocumentResponseDto> UploadDocumentAsync(
         Guid userId,
         UploadDocumentDto request,

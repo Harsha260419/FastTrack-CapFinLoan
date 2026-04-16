@@ -41,11 +41,11 @@ flowchart LR
 
     APP -. publishes ApplicationSubmittedEvent .-> MQ
     MQ -. delivers ApplicationSubmittedEvent .-> DOC
-    DOC -. sends UpdateApplicationStatusCommand .-> MQ
-    MQ -. delivers UpdateApplicationStatusCommand .-> APP
-    DOC -. publishes DocumentsVerifiedEvent .-> MQ
+    DOC -. initial status sync DocsPending .-> APP
+    DOC -. publishes DocumentsRequestedEvent .-> MQ
+    DOC -. publishes DocumentsVerifiedEvent (all docs verified) .-> MQ
     MQ -. delivers DocumentsVerifiedEvent .-> ADM
-    MQ -. delivers notification events .-> NOTIF
+    MQ -. delivers OtpRequestedEvent / DecisionMadeEvent .-> NOTIF
 
     ADM -->|internal HTTP| APP
     ADM -->|internal HTTP| DOC

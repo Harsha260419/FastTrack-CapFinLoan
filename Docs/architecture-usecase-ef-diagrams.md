@@ -48,11 +48,11 @@ flowchart LR
 
     APP -. publishes ApplicationSubmittedEvent .-> MQ
     MQ -. delivers ApplicationSubmittedEvent .-> DOC
-    DOC -. sends UpdateApplicationStatusCommand .-> MQ
-    MQ -. delivers UpdateApplicationStatusCommand .-> APP
-    DOC -. publishes DocumentsVerifiedEvent .-> MQ
+    DOC -. initial status sync DocsPending .-> APP
+    DOC -. publishes DocumentsRequestedEvent .-> MQ
+    DOC -. publishes DocumentsVerifiedEvent (all docs verified) .-> MQ
     MQ -. delivers DocumentsVerifiedEvent .-> ADM
-    MQ -. delivers notification events .-> NOTIF
+    MQ -. delivers OtpRequestedEvent / DecisionMadeEvent .-> NOTIF
 
     ADM -->|internal HTTP| APP
     ADM -->|internal HTTP| DOC
@@ -83,29 +83,35 @@ flowchart LR
       UC13((Verify Document))
       UC14((Record Decision Approve/Reject))
       UC15((View Dashboard & Status History))
+      UC16((Auto Sync Status to DocsPending on Submit))
+      UC17((Publish Documents Requested Event))
+      UC18((Recompute App Status from Document States))
     end
 
-    AP --> UC1
-    AP --> UC2
-    AP --> UC3
-    AP --> UC4
-    AP --> UC5
-    AP --> UC6
-    AP --> UC7
-    AP --> UC8
-    AP --> UC9
-    AP --> UC10
+    AP --- UC1
+    AP --- UC2
+    AP --- UC3
+    AP --- UC4
+    AP --- UC5
+    AP --- UC6
+    AP --- UC7
+    AP --- UC8
+    AP --- UC9
+    AP --- UC10
 
-    AD --> UC3
-    AD --> UC10
-    AD --> UC11
-    AD --> UC12
-    AD --> UC13
-    AD --> UC14
-    AD --> UC15
+    AD --- UC3
+    AD --- UC10
+    AD --- UC11
+    AD --- UC12
+    AD --- UC13
+    AD --- UC14
+    AD --- UC15
 
-    UC6 -. triggers event .-> UC9
-    UC13 -. may update app status .-> UC15
+    UC6 -. includes .-> UC16
+    UC6 -. includes .-> UC17
+    UC9 -. includes .-> UC18
+    UC13 -. includes .-> UC18
+    UC18 -. updates .-> UC8
     UC14 -. persists decision and status transition .-> UC15
 ```
 
@@ -198,7 +204,7 @@ erDiagram
     }
 
     AUTH_USERS ||--o{ CORE_LOAN_APPLICATIONS : "logical via UserId"
-    CORE_LOAN_APPLICATIONS ||--o{ DOCS_DOCUMENTS : "logical via ApplicationId"
+    CORE_LOAN_APPLICATIONS ||--o{ DOCS_DOCUMENTS : "logical via ApplicationId + status sync"
     CORE_LOAN_APPLICATIONS ||--o| ADMIN_DECISIONS : "logical via ApplicationId"
     CORE_LOAN_APPLICATIONS ||--o{ ADMIN_APPLICATION_STATUS_HISTORY : "logical via ApplicationId"
     AUTH_USERS ||--o{ ADMIN_DECISIONS : "logical via AdminUserId"
