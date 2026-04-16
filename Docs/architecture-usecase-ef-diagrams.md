@@ -72,7 +72,7 @@ flowchart LR
       UC2((Sign Up))
       UC3((Login))
       UC4((Create Loan Application))
-      UC5((Update/Delete Draft Application))
+      UC5((Update Draft Application))
       UC6((Submit Application))
       UC7((View My Applications))
       UC8((Track Application Status))

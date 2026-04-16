@@ -1,0 +1,124 @@
+classDiagram
+    class ReactFrontend {
+      +ApplicantPages
+      +AdminPages
+    }
+
+    class OcelotGateway {
+      +JWTAuth
+      +RouteClaimsADMIN
+      +RoutesToServices
+    }
+
+    class AuthAPI
+    class AuthService
+    class AuthDbContext
+    class User {
+      +Guid Id
+      +string Name
+      +string Email
+      +string Role
+    }
+    class SignupOtp {
+      +Guid Id
+      +string Email
+      +DateTime ExpiresAtUtc
+    }
+
+    class ApplicationAPI
+    class LoanApplicationService
+    class ApplicationDbContext
+    class LoanApplication {
+      +Guid ApplicationId
+      +Guid UserId
+      +decimal LoanAmount
+      +int Status
+    }
+
+    class DocumentAPI
+    class DocumentService {
+      +TriggerInitialStatusSyncAsync()
+      +UploadDocumentAsync()
+      +VerifyDocumentAsync()
+    }
+    class DocumentsDbContext
+    class Document {
+      +Guid Id
+      +Guid ApplicationId
+      +Guid UserId
+      +int DocumentType
+      +int Status
+    }
+
+    class AdminAPI
+    class AdminService
+    class AdminDbContext
+    class Decision {
+      +Guid DecisionId
+      +Guid ApplicationId
+      +string DecisionStatus
+    }
+    class ApplicationStatusHistory {
+      +Guid HistoryId
+      +Guid ApplicationId
+      +string FromStatus
+      +string ToStatus
+    }
+
+    class NotificationAPI
+    class RabbitMQ
+    class SQLServer
+    class FileStorage
+
+    class ApplicationSubmittedEvent
+    class DocumentsRequestedEvent
+    class DocumentsVerifiedEvent
+    class UpdateApplicationStatusCommand
+
+    ReactFrontend --> OcelotGateway : HTTP
+
+    OcelotGateway --> AuthAPI : /gateway/auth
+    OcelotGateway --> ApplicationAPI : /gateway/applications
+    OcelotGateway --> DocumentAPI : /gateway/documents
+    OcelotGateway --> AdminAPI : /gateway/admin
+
+    AuthAPI --> AuthService
+    AuthService --> AuthDbContext
+    AuthDbContext --> User
+    AuthDbContext --> SignupOtp
+
+    ApplicationAPI --> LoanApplicationService
+    LoanApplicationService --> ApplicationDbContext
+    ApplicationDbContext --> LoanApplication
+
+    DocumentAPI --> DocumentService
+    DocumentService --> DocumentsDbContext
+    DocumentsDbContext --> Document
+    DocumentService --> FileStorage
+
+    AdminAPI --> AdminService
+    AdminService --> AdminDbContext
+    AdminDbContext --> Decision
+    AdminDbContext --> ApplicationStatusHistory
+
+    NotificationAPI --> RabbitMQ
+
+    AuthDbContext --> SQLServer
+    ApplicationDbContext --> SQLServer
+    DocumentsDbContext --> SQLServer
+    AdminDbContext --> SQLServer
+
+    LoanApplicationService ..> ApplicationSubmittedEvent : publish
+    RabbitMQ ..> DocumentService : deliver ApplicationSubmittedEvent
+
+    DocumentService ..> UpdateApplicationStatusCommand : send
+    RabbitMQ ..> LoanApplicationService : deliver UpdateApplicationStatusCommand
+
+    DocumentService ..> DocumentsRequestedEvent : publish
+    DocumentService ..> DocumentsVerifiedEvent : publish
+    RabbitMQ ..> AdminService : deliver DocumentsVerifiedEvent
+
+    User "1" --> "0..*" LoanApplication : owns
+    LoanApplication "1" --> "0..*" Document : has
+    LoanApplication "1" --> "0..1" Decision : final decision
+    LoanApplication "1" --> "0..*" ApplicationStatusHistory : status timeline
