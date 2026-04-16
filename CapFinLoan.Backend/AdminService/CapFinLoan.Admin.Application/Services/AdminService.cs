@@ -1,4 +1,5 @@
 using CapFinLoan.Admin.Application.DTOs;
+using CapFinLoan.Admin.Application.Exceptions;
 using CapFinLoan.Admin.Application.Interfaces;
 using CapFinLoan.Admin.Application.Constants;
 using CapFinLoan.Admin.Domain.Entities;
@@ -51,7 +52,7 @@ public class AdminService : IAdminService
         var application = await _applicationClient.GetApplicationByIdAsync(applicationId);
         if (application is null)
         {
-            throw new KeyNotFoundException("Application not found.");
+            throw new NotFoundException("Application not found.");
         }
 
         return new AdminApplicationDetailsDto
@@ -74,7 +75,7 @@ public class AdminService : IAdminService
         var currentStatus = await _applicationClient.GetCurrentStatusAsync(applicationId);
         if (currentStatus is null)
         {
-            throw new KeyNotFoundException("Application not found.");
+            throw new NotFoundException("Application not found.");
         }
 
         return new ApplicationStatusResponseDto
@@ -129,13 +130,13 @@ public class AdminService : IAdminService
         var normalizedDecision = AdminStatusConstants.Normalize(request.Decision);
         if (!AdminStatusConstants.DecisionAllowed.Contains(normalizedDecision))
         {
-            throw new ArgumentException("Decision must be one of: UNDER_REVIEW, APPROVED, REJECTED.");
+            throw new ValidationException("Decision must be one of: UNDER_REVIEW, APPROVED, REJECTED.");
         }
 
         var currentStatus = await _applicationClient.GetCurrentStatusAsync(applicationId);
         if (currentStatus is null)
         {
-            throw new KeyNotFoundException("Application not found.");
+            throw new NotFoundException("Application not found.");
         }
 
         var normalizedCurrentStatus = AdminStatusConstants.Normalize(currentStatus);
@@ -146,7 +147,7 @@ public class AdminService : IAdminService
             request.Remarks);
         if (!updated)
         {
-            throw new InvalidOperationException("Unable to update application status for decision.");
+            throw new ConflictException("Unable to update application status for decision.");
         }
 
         await RecordStatusHistoryAsync(
@@ -203,7 +204,7 @@ public class AdminService : IAdminService
         if (normalizedDecision is AdminStatusConstants.Approved or AdminStatusConstants.Rejected)
         {
             var applicationDetails = await _applicationClient.GetApplicationByIdAsync(applicationId)
-                ?? throw new KeyNotFoundException("Application not found.");
+                ?? throw new NotFoundException("Application not found.");
 
             var sanctionAmount = normalizedDecision == AdminStatusConstants.Approved
                 ? request.SanctionAmount ?? 0m
@@ -242,18 +243,18 @@ public class AdminService : IAdminService
     {
         if (adminUserId == Guid.Empty)
         {
-            throw new UnauthorizedAccessException("Invalid admin user identifier.");
+            throw new ForbiddenException("Invalid admin user identifier.");
         }
 
         if (request is null)
         {
-            throw new ArgumentException("Request cannot be null.");
+            throw new ValidationException("Request cannot be null.");
         }
 
         var document = await _documentClient.GetDocumentByIdAsync(documentId);
         if (document is null)
         {
-            throw new KeyNotFoundException("Document not found.");
+            throw new NotFoundException("Document not found.");
         }
 
         var applicationId = document.ApplicationId;
@@ -262,7 +263,7 @@ public class AdminService : IAdminService
         var result = await _documentClient.VerifyDocumentAsync(documentId, request);
         if (result is null)
         {
-            throw new KeyNotFoundException("Document not found.");
+            throw new NotFoundException("Document not found.");
         }
 
         var statusAfter = AdminStatusConstants.Normalize(await _applicationClient.GetCurrentStatusAsync(applicationId) ?? "UNKNOWN");

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using CapFinLoan.Auth.Application.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -39,6 +40,7 @@ public class ExceptionHandlingMiddleware
     {
         var (statusCode, message) = exception switch
         {
+            ApplicationExceptionBase applicationException => (applicationException.StatusCode, applicationException.Message),
             ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
             UnauthorizedAccessException => (HttpStatusCode.Forbidden, exception.Message),
             KeyNotFoundException => (HttpStatusCode.NotFound, exception.Message),

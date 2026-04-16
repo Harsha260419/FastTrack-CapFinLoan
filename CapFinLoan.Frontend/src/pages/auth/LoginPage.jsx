@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import axiosInstance from '../api/axiosInstance'
-import useAuthStore from '../store/authStore'
+import axiosInstance from '../../api/axiosInstance'
+import useAuthStore from '../../store/authStore'
 
 function LoginPage() {
   const navigate = useNavigate()

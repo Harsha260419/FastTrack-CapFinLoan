@@ -1,3 +1,5 @@
+using CapFinLoan.Admin.Application.Exceptions;
+
 namespace CapFinLoan.Admin.Application.Constants;
 
 public static class AdminStatusConstants
@@ -54,7 +56,7 @@ public static class AdminStatusConstants
             Approved => "Approved",
             Rejected => "Rejected",
             Closed => "Closed",
-            _ => throw new ArgumentException($"Unsupported status: {normalizedStatus}")
+            _ => throw new ValidationException($"Unsupported status: {normalizedStatus}")
         };
     }
 }

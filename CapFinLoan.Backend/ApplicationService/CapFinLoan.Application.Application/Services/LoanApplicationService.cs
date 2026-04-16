@@ -1,4 +1,5 @@
 using CapFinLoan.Application.Application.DTOs;
+using CapFinLoan.Application.Application.Exceptions;
 using CapFinLoan.Application.Application.Interfaces;
 using CapFinLoan.Application.Domain.Entities;
 using CapFinLoan.Application.Domain.Enums;
@@ -69,17 +70,17 @@ public class LoanApplicationService : ILoanApplicationService
         var application = await _repository.GetByIdAsync(applicationId);
         if (application == null)
         {
-            throw new ArgumentException($"Application with ID {applicationId} not found.");
+            throw new NotFoundException($"Application with ID {applicationId} not found.");
         }
 
         if (application.UserId != userId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to update this application.");
+            throw new ForbiddenException("You do not have permission to update this application.");
         }
 
         if (application.Status != ApplicationStatus.Draft)
         {
-            throw new InvalidOperationException($"Cannot update application in {application.Status} status. Only Draft applications can be updated.");
+            throw new ConflictException($"Cannot update application in {application.Status} status. Only Draft applications can be updated.");
         }
 
         var fullName = $"{request.PersonalDetails.FirstName} {request.PersonalDetails.LastName}".Trim();
@@ -118,28 +119,28 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (request == null)
         {
-            throw new ArgumentException("Submit request cannot be null.");
+            throw new ValidationException("Submit request cannot be null.");
         }
 
         if (!request.DeclarationAccepted)
         {
-            throw new ArgumentException("Declaration must be accepted to submit application.");
+            throw new ValidationException("Declaration must be accepted to submit application.");
         }
 
         var application = await _repository.GetByIdAsync(applicationId);
         if (application == null)
         {
-            throw new ArgumentException($"Application with ID {applicationId} not found.");
+            throw new NotFoundException($"Application with ID {applicationId} not found.");
         }
 
         if (application.UserId != userId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to submit this application.");
+            throw new ForbiddenException("You do not have permission to submit this application.");
         }
 
         if (application.Status != ApplicationStatus.Draft)
         {
-            throw new InvalidOperationException($"Cannot submit application in {application.Status} status. Only Draft applications can be submitted.");
+            throw new ConflictException($"Cannot submit application in {application.Status} status. Only Draft applications can be submitted.");
         }
 
         ValidateApplicationForSubmission(application);
@@ -164,17 +165,17 @@ public class LoanApplicationService : ILoanApplicationService
         var application = await _repository.GetByIdAsync(applicationId);
         if (application == null)
         {
-            throw new ArgumentException($"Application with ID {applicationId} not found.");
+            throw new NotFoundException($"Application with ID {applicationId} not found.");
         }
 
         if (application.UserId != userId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to delete this application.");
+            throw new ForbiddenException("You do not have permission to delete this application.");
         }
 
         if (application.Status != ApplicationStatus.Draft)
         {
-            throw new InvalidOperationException("Only Draft applications can be deleted.");
+            throw new ConflictException("Only Draft applications can be deleted.");
         }
 
         await _repository.DeleteAsync(application);
@@ -194,12 +195,12 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (pageNumber < 1)
         {
-            throw new ArgumentException("Page number must be greater than 0.");
+            throw new ValidationException("Page number must be greater than 0.");
         }
 
         if (pageSize < 1 || pageSize > 100)
         {
-            throw new ArgumentException("Page size must be between 1 and 100.");
+            throw new ValidationException("Page size must be between 1 and 100.");
         }
 
         var (applications, totalCount) = await _repository.GetByUserIdPaginatedAsync(userId, pageNumber, pageSize);
@@ -214,12 +215,12 @@ public class LoanApplicationService : ILoanApplicationService
         var application = await _repository.GetByIdAsync(applicationId);
         if (application == null)
         {
-            throw new ArgumentException($"Application with ID {applicationId} not found.");
+            throw new NotFoundException($"Application with ID {applicationId} not found.");
         }
 
         if (application.UserId != userId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to view this application status.");
+            throw new ForbiddenException("You do not have permission to view this application status.");
         }
 
         var timeline = await BuildStatusTimelineAsync(application);
@@ -237,11 +238,11 @@ public class LoanApplicationService : ILoanApplicationService
     public async Task<ApplicationDetailsResponseDto> GetApplicationDetailsAsync(Guid requesterUserId, bool isAdmin, Guid applicationId)
     {
         var application = await _repository.GetByIdAsync(applicationId)
-            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+            ?? throw new NotFoundException($"Application with ID {applicationId} not found.");
 
         if (!isAdmin && application.UserId != requesterUserId)
         {
-            throw new UnauthorizedAccessException("You do not have permission to view this application.");
+            throw new ForbiddenException("You do not have permission to view this application.");
         }
 
         return MapToApplicationDetailsResponseDto(application);
@@ -270,7 +271,7 @@ public class LoanApplicationService : ILoanApplicationService
     public async Task<ApplicationResponseDto> GetApplicationByIdForAdminAsync(Guid applicationId)
     {
         var application = await _repository.GetByIdAsync(applicationId)
-            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+            ?? throw new NotFoundException($"Application with ID {applicationId} not found.");
 
         return MapToApplicationResponseDto(application, true, string.Empty);
     }
@@ -279,12 +280,12 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (request is null)
         {
-            throw new ArgumentException("Request cannot be null.");
+            throw new ValidationException("Request cannot be null.");
         }
 
         var targetStatus = ParseApplicationStatus(request.Status);
         var application = await _repository.GetByIdAsync(applicationId)
-            ?? throw new ArgumentException($"Application with ID {applicationId} not found.");
+            ?? throw new NotFoundException($"Application with ID {applicationId} not found.");
 
         if (application.Status == targetStatus)
         {
@@ -293,7 +294,7 @@ public class LoanApplicationService : ILoanApplicationService
 
         if (!IsTransitionAllowed(application.Status, targetStatus))
         {
-            throw new InvalidOperationException($"Invalid status transition: {application.Status} -> {targetStatus}");
+            throw new ConflictException($"Invalid status transition: {application.Status} -> {targetStatus}");
         }
 
         application.Status = targetStatus;
@@ -319,27 +320,27 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (request == null)
         {
-            throw new ArgumentException("Request cannot be null.");
+            throw new ValidationException("Request cannot be null.");
         }
 
         if (request.PersonalDetails == null || request.EmploymentDetails == null || request.LoanDetails == null)
         {
-            throw new ArgumentException("PersonalDetails, EmploymentDetails, and LoanDetails are required.");
+            throw new ValidationException("PersonalDetails, EmploymentDetails, and LoanDetails are required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.PersonalDetails.FirstName) || string.IsNullOrWhiteSpace(request.PersonalDetails.LastName))
         {
-            throw new ArgumentException("First name and last name are required.");
+            throw new ValidationException("First name and last name are required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.PersonalDetails.Email) || !request.PersonalDetails.Email.Contains("@"))
         {
-            throw new ArgumentException("Valid email address is required.");
+            throw new ValidationException("Valid email address is required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.PersonalDetails.Phone) || request.PersonalDetails.Phone.Length < 10)
         {
-            throw new ArgumentException("Valid phone number (minimum 10 digits) is required.");
+            throw new ValidationException("Valid phone number (minimum 10 digits) is required.");
         }
 
         if (string.IsNullOrWhiteSpace(request.PersonalDetails.AddressLine1) ||
@@ -347,33 +348,33 @@ public class LoanApplicationService : ILoanApplicationService
             string.IsNullOrWhiteSpace(request.PersonalDetails.State) ||
             string.IsNullOrWhiteSpace(request.PersonalDetails.PostalCode))
         {
-            throw new ArgumentException("AddressLine1, City, State, and PostalCode are required.");
+            throw new ValidationException("AddressLine1, City, State, and PostalCode are required.");
         }
 
         if (request.LoanDetails.RequestedAmount <= 0)
         {
-            throw new ArgumentException("Loan amount must be greater than zero.");
+            throw new ValidationException("Loan amount must be greater than zero.");
         }
 
         if (request.LoanDetails.RequestedAmount > 10000000)
         {
-            throw new ArgumentException("Loan amount exceeds maximum limit.");
+            throw new ValidationException("Loan amount exceeds maximum limit.");
         }
 
         if (string.IsNullOrWhiteSpace(request.LoanDetails.LoanPurpose))
         {
-            throw new ArgumentException("Loan purpose is required.");
+            throw new ValidationException("Loan purpose is required.");
         }
 
         if (request.LoanDetails.RequestedTenureMonths <= 0 || request.LoanDetails.RequestedTenureMonths > 360)
         {
-            throw new ArgumentException("Loan tenure must be between 1 and 360 months.");
+            throw new ValidationException("Loan tenure must be between 1 and 360 months.");
         }
 
         if (request.EmploymentDetails.MonthlyIncome < 0 ||
             request.EmploymentDetails.AnnualIncome < 0)
         {
-            throw new ArgumentException("Income values cannot be negative.");
+            throw new ValidationException("Income values cannot be negative.");
         }
     }
 
@@ -395,12 +396,12 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (string.IsNullOrWhiteSpace(rawStatus))
         {
-            throw new ArgumentException("Status is required.");
+            throw new ValidationException("Status is required.");
         }
 
         if (int.TryParse(rawStatus.Trim(), out _))
         {
-            throw new ArgumentException("Numeric status is not allowed. Use literal status values.");
+            throw new ValidationException("Numeric status is not allowed. Use literal status values.");
         }
 
         var normalized = rawStatus.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
@@ -419,7 +420,7 @@ public class LoanApplicationService : ILoanApplicationService
 
         if (!Enum.TryParse<ApplicationStatus>(canonical, true, out var parsed))
         {
-            throw new ArgumentException("Invalid status value.");
+            throw new ValidationException("Invalid status value.");
         }
 
         return parsed;
@@ -446,7 +447,7 @@ public class LoanApplicationService : ILoanApplicationService
     {
         if (request == null)
         {
-            throw new ArgumentException("Request cannot be null.");
+            throw new ValidationException("Request cannot be null.");
         }
 
         ValidateCreateApplicationRequest(new CreateApplicationRequestDto
@@ -467,7 +468,7 @@ public class LoanApplicationService : ILoanApplicationService
             string.IsNullOrWhiteSpace(application.LoanPurpose) ||
             application.TenureMonths <= 0)
         {
-            throw new ArgumentException("Application has incomplete information. Please fill all required fields before submitting.");
+            throw new ValidationException("Application has incomplete information. Please fill all required fields before submitting.");
         }
     }
 

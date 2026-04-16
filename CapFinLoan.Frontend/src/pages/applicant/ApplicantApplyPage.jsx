@@ -2,9 +2,9 @@ import { Check } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import axiosInstance from '../api/axiosInstance'
-import LoadingSpinner from '../components/LoadingSpinner'
-import useAuthStore from '../store/authStore'
+import axiosInstance from '../../api/axiosInstance'
+import LoadingSpinner from '../../components/LoadingSpinner'
+import useAuthStore from '../../store/authStore'
 
 const STEP_TITLES = ['Personal Info', 'Employment', 'Loan Details', 'Review & Submit']
 const TENURE_OPTIONS = [12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180]

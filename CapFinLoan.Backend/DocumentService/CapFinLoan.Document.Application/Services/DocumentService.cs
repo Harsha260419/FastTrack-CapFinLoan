@@ -1,4 +1,5 @@
 using CapFinLoan.Document.Application.DTOs;
+using CapFinLoan.Document.Application.Exceptions;
 using CapFinLoan.Document.Application.Interfaces;
 using CapFinLoan.Document.Domain.Entities;
 using CapFinLoan.Document.Domain.Enums;
@@ -50,12 +51,12 @@ public class DocumentService : IDocumentService
     {
         if (request.ApplicationId == Guid.Empty)
         {
-            throw new ArgumentException("ApplicationId is required.");
+            throw new ValidationException("ApplicationId is required.");
         }
 
         if (request.File is null)
         {
-            throw new ArgumentException("File is required.");
+            throw new ValidationException("File is required.");
         }
 
         var parsedDocumentType = ParseDocumentType(request.DocumentType);
@@ -68,7 +69,7 @@ public class DocumentService : IDocumentService
 
         if (!isValidApplication)
         {
-            throw new UnauthorizedAccessException("You are not allowed to upload documents for this application.");
+            throw new ForbiddenException("You are not allowed to upload documents for this application.");
         }
 
         _fileStorageService.ValidateFile(request.File);
@@ -79,7 +80,7 @@ public class DocumentService : IDocumentService
         {
             if (existing.UserId != userId)
             {
-                throw new UnauthorizedAccessException("You are not allowed to replace this document.");
+                throw new ForbiddenException("You are not allowed to replace this document.");
             }
 
             var oldFilePath = existing.FilePath;
@@ -134,22 +135,22 @@ public class DocumentService : IDocumentService
     {
         if (request.File is null)
         {
-            throw new ArgumentException("File is required.");
+            throw new ValidationException("File is required.");
         }
 
         var parsedDocumentType = ParseDocumentType(request.DocumentType);
 
         var existing = await _documentRepository.GetByIdAsync(documentId)
-            ?? throw new KeyNotFoundException("Document not found.");
+            ?? throw new NotFoundException("Document not found.");
 
         if (existing.UserId != userId)
         {
-            throw new UnauthorizedAccessException("You are not allowed to replace this document.");
+            throw new ForbiddenException("You are not allowed to replace this document.");
         }
 
         if (existing.ApplicationId != request.ApplicationId || existing.DocumentType != parsedDocumentType)
         {
-            throw new ArgumentException("ApplicationId and DocumentType must match the existing document.");
+            throw new ValidationException("ApplicationId and DocumentType must match the existing document.");
         }
 
         var isValidApplication = await _applicationServiceClient.ValidateApplicationAccessAsync(
@@ -160,7 +161,7 @@ public class DocumentService : IDocumentService
 
         if (!isValidApplication)
         {
-            throw new UnauthorizedAccessException("You are not allowed to upload documents for this application.");
+            throw new ForbiddenException("You are not allowed to upload documents for this application.");
         }
 
         _fileStorageService.ValidateFile(request.File);
@@ -195,7 +196,7 @@ public class DocumentService : IDocumentService
     {
         if (applicationId == Guid.Empty)
         {
-            throw new ArgumentException("ApplicationId is required.");
+            throw new ValidationException("ApplicationId is required.");
         }
 
         if (!isAdmin)
@@ -208,7 +209,7 @@ public class DocumentService : IDocumentService
 
             if (!isValidApplication)
             {
-                throw new UnauthorizedAccessException("You are not allowed to access this application.");
+                throw new ForbiddenException("You are not allowed to access this application.");
             }
         }
 
@@ -222,7 +223,7 @@ public class DocumentService : IDocumentService
     public async Task<DocumentResponseDto> GetDocumentByIdAsync(Guid documentId, CancellationToken cancellationToken = default)
     {
         var document = await _documentRepository.GetByIdAsync(documentId)
-            ?? throw new KeyNotFoundException("Document not found.");
+            ?? throw new NotFoundException("Document not found.");
 
         return MapToResponse(document);
     }
@@ -236,18 +237,18 @@ public class DocumentService : IDocumentService
     {
         if (adminUserId == Guid.Empty)
         {
-            throw new UnauthorizedAccessException("Invalid admin user identifier.");
+            throw new ForbiddenException("Invalid admin user identifier.");
         }
 
         var parsedStatus = ParseVerificationStatus(request.Status);
 
         if (parsedStatus is not DocumentStatus.Verified and not DocumentStatus.Rejected)
         {
-            throw new ArgumentException("Document status must be either Verified or Rejected.");
+            throw new ValidationException("Document status must be either Verified or Rejected.");
         }
 
         var document = await _documentRepository.GetByIdAsync(documentId)
-            ?? throw new KeyNotFoundException("Document not found.");
+            ?? throw new NotFoundException("Document not found.");
 
         document.Status = parsedStatus;
         document.Remarks = string.IsNullOrWhiteSpace(request.Remarks)
@@ -340,12 +341,12 @@ public class DocumentService : IDocumentService
     {
         if (string.IsNullOrWhiteSpace(rawDocumentType))
         {
-            throw new ArgumentException("DocumentType is required. Allowed values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
+            throw new ValidationException("DocumentType is required. Allowed values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
         }
 
         if (int.TryParse(rawDocumentType.Trim(), out _))
         {
-            throw new ArgumentException("Numeric DocumentType is not allowed. Use literal values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
+            throw new ValidationException("Numeric DocumentType is not allowed. Use literal values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
         }
 
         var normalized = rawDocumentType.Trim().ToUpperInvariant().Replace("-", "_").Replace(" ", "_");
@@ -360,7 +361,7 @@ public class DocumentService : IDocumentService
 
         if (!Enum.TryParse<DocumentType>(canonical, true, out var parsedDocumentType))
         {
-            throw new ArgumentException("Invalid DocumentType. Allowed values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
+            throw new ValidationException("Invalid DocumentType. Allowed values: ID_PROOF, ADDRESS_PROOF, BANK_STATEMENT, INCOME_PROOF.");
         }
 
         return parsedDocumentType;
@@ -370,17 +371,17 @@ public class DocumentService : IDocumentService
     {
         if (string.IsNullOrWhiteSpace(rawStatus))
         {
-            throw new ArgumentException("Status is required. Allowed values: Verified, Rejected.");
+            throw new ValidationException("Status is required. Allowed values: Verified, Rejected.");
         }
 
         if (int.TryParse(rawStatus.Trim(), out _))
         {
-            throw new ArgumentException("Numeric Status is not allowed. Use literal values: Verified or Rejected.");
+            throw new ValidationException("Numeric Status is not allowed. Use literal values: Verified or Rejected.");
         }
 
         if (!Enum.TryParse<DocumentStatus>(rawStatus.Trim(), true, out var parsedStatus))
         {
-            throw new ArgumentException("Invalid Status. Allowed values: Verified or Rejected.");
+            throw new ValidationException("Invalid Status. Allowed values: Verified or Rejected.");
         }
 
         return parsedStatus;

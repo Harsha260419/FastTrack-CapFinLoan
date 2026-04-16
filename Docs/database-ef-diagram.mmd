@@ -1,0 +1,92 @@
+erDiagram
+    AUTH_USERS {
+        uniqueidentifier Id PK
+        nvarchar Name
+        nvarchar Email UK
+        nvarchar PhoneNumber
+        nvarchar PasswordHash
+        nvarchar Role
+        bit IsActive
+        datetime CreatedAt
+    }
+
+    AUTH_SIGNUP_OTPS {
+        uniqueidentifier Id PK
+        nvarchar Email
+        nvarchar OtpHash
+        datetime ExpiresAtUtc
+        bit IsUsed
+        datetime CreatedAtUtc
+    }
+
+    CORE_LOAN_APPLICATIONS {
+        uniqueidentifier ApplicationId PK
+        uniqueidentifier UserId
+        nvarchar FirstName
+        nvarchar LastName
+        datetime DateOfBirth
+        nvarchar Gender
+        nvarchar AddressLine1
+        nvarchar AddressLine2
+        nvarchar City
+        nvarchar State
+        nvarchar PostalCode
+        nvarchar EmployerName
+        nvarchar EmploymentType
+        decimal MonthlyIncome
+        decimal AnnualIncome
+        nvarchar FullName
+        nvarchar Email
+        nvarchar PhoneNumber
+        decimal LoanAmount
+        nvarchar LoanPurpose
+        int TenureMonths
+        int Status
+        datetime CreatedAt
+        datetime UpdatedAt
+        datetime SubmittedAt
+        nvarchar AdminRemarks
+    }
+
+    DOCS_DOCUMENTS {
+        uniqueidentifier Id PK
+        uniqueidentifier ApplicationId
+        uniqueidentifier UserId
+        nvarchar FileName
+        nvarchar FilePath
+        int DocumentType
+        int Status
+        nvarchar Remarks
+        datetime UploadedAt
+    }
+
+    ADMIN_DECISIONS {
+        uniqueidentifier DecisionId PK
+        uniqueidentifier ApplicationId UK
+        uniqueidentifier AdminUserId
+        nvarchar DecisionStatus
+        nvarchar Remarks
+        decimal SanctionAmount
+        decimal InterestRate
+        nvarchar DecidedBy
+        datetime DecidedAt
+    }
+
+    ADMIN_APPLICATION_STATUS_HISTORY {
+        uniqueidentifier HistoryId PK
+        uniqueidentifier ApplicationId
+        uniqueidentifier AdminUserId
+        nvarchar FromStatus
+        nvarchar ToStatus
+        nvarchar ChangedBy
+        nvarchar Remarks
+        datetime ChangedAt
+    }
+
+    AUTH_USERS ||--o{ CORE_LOAN_APPLICATIONS : "logical via UserId"
+    CORE_LOAN_APPLICATIONS ||--o{ DOCS_DOCUMENTS : "logical via ApplicationId"
+    CORE_LOAN_APPLICATIONS ||--o| ADMIN_DECISIONS : "logical via ApplicationId"
+    CORE_LOAN_APPLICATIONS ||--o{ ADMIN_APPLICATION_STATUS_HISTORY : "logical via ApplicationId"
+    AUTH_USERS ||--o{ ADMIN_DECISIONS : "logical via AdminUserId"
+    AUTH_USERS ||--o{ ADMIN_APPLICATION_STATUS_HISTORY : "logical via AdminUserId"
+    AUTH_USERS ||--o{ AUTH_SIGNUP_OTPS : "logical via Email"

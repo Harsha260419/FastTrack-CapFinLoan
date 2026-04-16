@@ -13,8 +13,8 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import axiosInstance from '../api/axiosInstance'
-import LoadingSpinner from '../components/LoadingSpinner'
+import axiosInstance from '../../api/axiosInstance'
+import LoadingSpinner from '../../components/LoadingSpinner'
 
 function formatSubmittedDate(value) {
   if (!value) {

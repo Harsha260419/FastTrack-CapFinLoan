@@ -1,0 +1,53 @@
+flowchart LR
+    A[Applicant User]
+    B[Admin User]
+
+    subgraph FE[Frontend]
+      UI[React Frontend]
+    end
+
+    subgraph GW[API Gateway]
+      OCELOT[Ocelot Gateway\nJWT validation + route claims]
+    end
+
+    subgraph MS[Backend Microservices]
+      AUTH[Auth Service]
+      APP[Application Service]
+      DOC[Document Service]
+      ADM[Admin Service]
+      NOTIF[Notification Service]
+    end
+
+    subgraph INFRA[Infrastructure]
+      MQ[RabbitMQ]
+      SQL[(SQL Server)]
+      FS[(Document Upload Storage)]
+    end
+
+    A --> UI
+    B --> UI
+    UI --> OCELOT
+
+    OCELOT --> AUTH
+    OCELOT --> APP
+    OCELOT --> DOC
+    OCELOT --> ADM
+
+    AUTH --> SQL
+    APP --> SQL
+    DOC --> SQL
+    ADM --> SQL
+    DOC --> FS
+
+    APP -. publishes ApplicationSubmittedEvent .-> MQ
+    MQ -. delivers ApplicationSubmittedEvent .-> DOC
+    DOC -. sends UpdateApplicationStatusCommand .-> MQ
+    MQ -. delivers UpdateApplicationStatusCommand .-> APP
+    DOC -. publishes DocumentsVerifiedEvent .-> MQ
+    MQ -. delivers DocumentsVerifiedEvent .-> ADM
+    MQ -. delivers notification events .-> NOTIF
+
+    ADM -->|internal HTTP| APP
+    ADM -->|internal HTTP| DOC
+    APP -->|internal HTTP callback| ADM
+    DOC -->|internal HTTP fallback| APP
