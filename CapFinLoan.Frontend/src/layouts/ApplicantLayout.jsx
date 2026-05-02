@@ -1,7 +1,9 @@
 import { FileUp, LayoutDashboard, List } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
+import ChatWidget from '../components/ChatWidget'
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar'
+import useAuthStore from '../store/authStore'
 
 const applicantLinks = [
   { label: 'Dashboard', to: '/applicant/dashboard', icon: LayoutDashboard },
@@ -10,6 +12,8 @@ const applicantLinks = [
 ]
 
 function ApplicantLayout() {
+  const { token } = useAuthStore()
+
   return (
     <div className="fixed inset-0 z-20 min-h-screen w-screen bg-slate-100 lg:grid lg:grid-cols-[18rem_1fr]">
       <Sidebar links={applicantLinks} />
@@ -20,6 +24,8 @@ function ApplicantLayout() {
           <Outlet />
         </main>
       </div>
+
+      {token ? <ChatWidget /> : null}
     </div>
   )
 }

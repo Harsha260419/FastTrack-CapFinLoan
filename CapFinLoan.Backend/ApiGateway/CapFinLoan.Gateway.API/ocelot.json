@@ -33,6 +33,13 @@
       "SwaggerKey": "documents"
     },
     {
+      "UpstreamPathTemplate": "/gateway/chat/message",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/chat",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "chatservice", "Port": 5200 }]
+    },
+    {
       "UpstreamPathTemplate": "/gateway/admin/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/admin/{everything}",

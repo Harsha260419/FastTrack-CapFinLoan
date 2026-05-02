@@ -147,6 +147,24 @@ services:
       Email__AppPassword: ${EMAIL_APP_PASSWORD}
     restart: unless-stopped
 
+  chatservice:
+    container_name: capfinloan-chatservice
+    build:
+      context: .
+      dockerfile: CapFinLoan.Backend/ChatService/CapFinLoan.Chat.API/Dockerfile
+    ports:
+      - "5200:5200"
+    depends_on:
+      applicationservice:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:5200
+      LMStudio__BaseUrl: http://host.docker.internal:1234
+      LMStudio__Model: qwen3-1.7b
+      ApplicationService__BaseUrl: http://applicationservice:5256
+    restart: unless-stopped
+
   gateway:
     container_name: capfinloan-gateway
     build:
@@ -164,6 +182,8 @@ services:
       adminservice:
         condition: service_started
       notificationservice:
+        condition: service_started
+      chatservice:
         condition: service_started
     environment:
       ASPNETCORE_ENVIRONMENT: Development
