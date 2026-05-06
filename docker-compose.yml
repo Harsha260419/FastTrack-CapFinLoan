@@ -50,6 +50,7 @@ services:
       ASPNETCORE_URLS: http://+:5025
       ConnectionStrings__AuthServiceConnection: Server=sqlserver,1433;Database=CapFinLoanAuthDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
       ConnectionStrings__DefaultConnection: Server=sqlserver,1433;Database=CapFinLoanAuthDb;User Id=${SA_USER};Password=${SA_PASSWORD};TrustServerCertificate=True
+      Google__ClientId: ${GOOGLE_CLIENT_ID}
       RabbitMQ__Host: rabbitmq
       RabbitMQ__Username: ${RABBITMQ_USERNAME}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
@@ -193,8 +194,10 @@ services:
   frontend:
     container_name: capfinloan-frontend
     build:
-      context: CapFinLoan.Frontend
+      context: ./CapFinLoan.Frontend
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     ports:
       - "3000:80"
     depends_on:

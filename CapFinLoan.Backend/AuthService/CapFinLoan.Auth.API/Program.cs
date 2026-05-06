@@ -1,6 +1,7 @@
 using System.Text;
 using CapFinLoan.Auth.Application.Interfaces;
 using CapFinLoan.Auth.Application.Middleware;
+using CapFinLoan.Auth.Application.Options;
 using CapFinLoan.Auth.Application.Services;
 using CapFinLoan.Auth.Infrastructure;
 using CapFinLoan.Auth.Infrastructure.Options;
@@ -30,6 +31,7 @@ builder.Services.AddDbContext<AuthDbContext>(options =>
 // Configure JWT Settings
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 builder.Services.Configure<RabbitMqOptions>(builder.Configuration.GetSection(RabbitMqOptions.SectionName));
+builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection(GoogleOptions.SectionName));
 
 var rabbitMqOptions = builder.Configuration.GetSection(RabbitMqOptions.SectionName).Get<RabbitMqOptions>()
     ?? new RabbitMqOptions();
@@ -52,6 +54,7 @@ builder.Services.AddScoped<ISignupOtpRepository, SignupOtpRepository>();
 builder.Services.AddScoped<IPasswordHasher, PasswordHasherService>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddHttpClient();
 
 // Get JWT settings for authentication configuration
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>()

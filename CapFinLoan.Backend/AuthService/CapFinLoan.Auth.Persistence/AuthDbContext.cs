@@ -36,7 +36,13 @@ public class AuthDbContext : DbContext
                 .IsRequired();
 
             entity.Property(x => x.PasswordHash)
-                .IsRequired();
+                .IsRequired(false);
+
+            entity.Property(x => x.AuthProvider)
+                .HasMaxLength(20);
+
+            entity.Property(x => x.GoogleId)
+                .HasMaxLength(200);
 
             entity.Property(x => x.Role)
                 .HasMaxLength(20)

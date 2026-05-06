@@ -90,6 +90,7 @@ function AdminReviewPage() {
   const [documentsLoadError, setDocumentsLoadError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [pageError, setPageError] = useState('')
+  const [documentActionError, setDocumentActionError] = useState('')
 
   const [verifyLoadingByType, setVerifyLoadingByType] = useState({})
   const [rejectOpenByType, setRejectOpenByType] = useState({})
@@ -128,6 +129,7 @@ function AdminReviewPage() {
   )
 
   const currentStatus = normalizeStatus(application?.currentStatus || application?.status)
+  const docActionsDisabled = ['UNDER_REVIEW', 'APPROVED', 'REJECTED'].includes(currentStatus)
 
   const showDocMessage = (docType, kind, message) => {
     setMessageByType((prev) => ({
@@ -322,6 +324,7 @@ function AdminReviewPage() {
     }
 
     setVerifyLoadingByType((prev) => ({ ...prev, [docType]: true }))
+    setDocumentActionError('')
 
     try {
       await axiosInstance.put(`/gateway/admin/documents/${documentId}/verify`, {
@@ -332,7 +335,7 @@ function AdminReviewPage() {
       showDocMessage(docType, 'success', `Document ${status.toLowerCase()} successfully.`)
       await fetchDocuments()
     } catch (error) {
-      showDocMessage(docType, 'error', 'Unable to update document status.')
+      setDocumentActionError('Unable to update document status. Please try again.')
     } finally {
       setVerifyLoadingByType((prev) => ({ ...prev, [docType]: false }))
     }
@@ -470,13 +473,25 @@ function AdminReviewPage() {
               {documentsLoadError ? (
                 <p className="mb-3 text-xs text-slate-500">Documents not accessible via current permissions</p>
               ) : null}
+              {documentActionError ? (
+                <div className="mb-4 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  <span>{documentActionError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setDocumentActionError('')}
+                    className="text-xs font-semibold text-red-700"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ) : null}
               <div className="grid gap-4 sm:grid-cols-2">
                 {DOC_TYPE_CONFIG.map((config) => {
                   const doc = documentsByType[config.apiValue]
                   const state = messageByType[config.apiValue] || {}
                   const isBusy = verifyLoadingByType[config.apiValue]
                   const isViewing = viewLoadingByType[config.apiValue]
-                  const showReject = rejectOpenByType[config.apiValue]
+                  const showReject = !docActionsDisabled && rejectOpenByType[config.apiValue]
 
                   return (
                     <article key={config.apiValue} className="rounded-xl border border-slate-200 p-4">
@@ -488,7 +503,6 @@ function AdminReviewPage() {
                       <p className="text-xs text-slate-600">{doc ? `File: ${doc?.originalFileName || doc?.fileName || '-'}` : 'No file uploaded'}</p>
                       <p className="mt-1 text-xs text-slate-500">Uploaded: {formatDate(doc?.uploadedAt)}</p>
 
-                      {state.error ? <p className="mt-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">{state.error}</p> : null}
                       {state.success ? <p className="mt-2 rounded-md bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700">{state.success}</p> : null}
 
                       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -509,7 +523,7 @@ function AdminReviewPage() {
 
                         <button
                           type="button"
-                          disabled={!doc || isBusy}
+                          disabled={!doc || isBusy || docActionsDisabled}
                           onClick={() => verifyDocument(config.apiValue, doc, 'Verified', 'doc verified')}
                           className="rounded-md border border-green-200 px-2.5 py-1.5 text-xs font-semibold text-green-700 transition hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
@@ -518,7 +532,7 @@ function AdminReviewPage() {
 
                         <button
                           type="button"
-                          disabled={!doc || isBusy}
+                          disabled={!doc || isBusy || docActionsDisabled}
                           onClick={() =>
                             setRejectOpenByType((prev) => ({
                               ...prev,
@@ -580,6 +594,11 @@ function AdminReviewPage() {
                   )
                 })}
               </div>
+              {docActionsDisabled ? (
+                <p className="mt-3 text-xs text-slate-500">
+                  Document actions are not available once the application is under review.
+                </p>
+              ) : null}
             </section>
           </div>
 

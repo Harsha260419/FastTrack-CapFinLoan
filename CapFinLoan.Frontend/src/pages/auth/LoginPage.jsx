@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckCircle } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -9,6 +9,7 @@ function LoginPage() {
   const navigate = useNavigate()
   const setAuth = useAuthStore((state) => state.setAuth)
   const [loginError, setLoginError] = useState('')
+  console.log('Google Client ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID)
   const {
     register,
     handleSubmit,
@@ -45,6 +46,70 @@ function LoginPage() {
       setLoginError('Invalid credentials')
     }
   }
+
+  const handleGoogleResponse = async (response) => {
+    const credential = response?.credential
+    if (!credential) {
+      setLoginError('Google sign-in failed. Please try again.')
+      return
+    }
+
+    try {
+      const googleResponse = await axiosInstance.post('/gateway/auth/google', {
+        idToken: credential,
+      })
+
+      const authResponse = googleResponse.data || {}
+      const normalizedRole = String(authResponse?.role || 'APPLICANT').toUpperCase()
+      setAuth({ ...authResponse, role: normalizedRole })
+      navigate('/applicant/dashboard')
+    } catch (error) {
+      const statusCode = error?.response?.status
+      const message = error?.response?.data?.message || ''
+
+      if (statusCode === 400 && message.includes('already exists')) {
+        setLoginError('An account with this email already exists. Please login with your password.')
+        return
+      }
+
+      setLoginError('Google sign-in failed. Please try again.')
+    }
+  }
+
+  useEffect(() => {
+    const renderGoogleButton = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        })
+
+        const buttonEl = document.getElementById('google-signin-btn-login')
+        if (buttonEl) {
+          window.google.accounts.id.renderButton(buttonEl, {
+            theme: 'outline',
+            size: 'large',
+            width: buttonEl.offsetWidth || 400,
+            text: 'continue_with',
+          })
+        }
+      }
+    }
+
+    if (window.google) {
+      renderGoogleButton()
+      return undefined
+    }
+
+    const interval = setInterval(() => {
+      if (window.google && window.google.accounts) {
+        clearInterval(interval)
+        renderGoogleButton()
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <section className="min-h-screen w-full bg-gray-50">
@@ -148,6 +213,14 @@ function LoginPage() {
             >
               {isSubmitting ? 'Signing in...' : 'Login'}
             </button>
+
+            <div className="flex items-center gap-3">
+              <hr className="flex-1 border-slate-200" />
+              <span className="text-sm text-gray-400">or</span>
+              <hr className="flex-1 border-slate-200" />
+            </div>
+
+            <div id="google-signin-btn-login" className="flex w-full justify-center" />
           </form>
 
           <p className="mt-6 text-center text-sm text-slate-600">

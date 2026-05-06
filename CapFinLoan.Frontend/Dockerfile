@@ -1,6 +1,9 @@
 FROM node:20.19.0-alpine3.21 AS build
 WORKDIR /app
 
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+
 RUN apk upgrade --no-cache
 
 COPY package*.json ./

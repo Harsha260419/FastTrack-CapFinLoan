@@ -1,6 +1,38 @@
 {
   "Routes": [
     {
+      "UpstreamPathTemplate": "/gateway/auth/profile",
+      "UpstreamHttpMethod": ["GET", "PUT"],
+      "DownstreamPathTemplate": "/api/auth/profile",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "authservice", "Port": 5025 }],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "GatewayJwt",
+        "AllowedScopes": []
+      },
+      "SwaggerKey": "auth"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/auth/profile/password",
+      "UpstreamHttpMethod": ["PUT"],
+      "DownstreamPathTemplate": "/api/auth/profile/password",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "authservice", "Port": 5025 }],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "GatewayJwt",
+        "AllowedScopes": []
+      },
+      "SwaggerKey": "auth"
+    },
+    {
+      "UpstreamPathTemplate": "/gateway/auth/google",
+      "UpstreamHttpMethod": ["POST"],
+      "DownstreamPathTemplate": "/api/auth/google",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [{ "Host": "authservice", "Port": 5025 }],
+      "SwaggerKey": "auth"
+    },
+    {
       "UpstreamPathTemplate": "/gateway/auth/{everything}",
       "UpstreamHttpMethod": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       "DownstreamPathTemplate": "/api/auth/{everything}",

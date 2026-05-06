@@ -1,6 +1,8 @@
 using CapFinLoan.Auth.Application.DTOs;
 using CapFinLoan.Auth.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace CapFinLoan.Auth.API.Controllers;
 
@@ -49,5 +51,91 @@ public class AuthController : ControllerBase
         }
 
         return Ok(result);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleAuthRequestDto request)
+    {
+        var result = await _authService.GoogleLoginAsync(request);
+        if (result.Success && result.AuthResponse is not null)
+        {
+            return Ok(result.AuthResponse);
+        }
+
+        if (result.ErrorType == GoogleAuthErrorType.InvalidToken)
+        {
+            return Unauthorized(new { message = result.Message });
+        }
+
+        if (result.ErrorType == GoogleAuthErrorType.LocalAccountExists)
+        {
+            return BadRequest(new { message = result.Message });
+        }
+
+        return BadRequest(new { message = string.IsNullOrWhiteSpace(result.Message) ? "Google sign-in failed." : result.Message });
+    }
+
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        var profile = await _authService.GetProfileAsync(userId.Value);
+        if (profile is null)
+        {
+            return NotFound(new { message = "User not found." });
+        }
+
+        return Ok(profile);
+    }
+
+    [Authorize]
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequestDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        var result = await _authService.UpdateProfileAsync(userId.Value, request);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPut("profile/password")]
+    public async Task<IActionResult> UpdatePassword([FromBody] UpdatePasswordRequestDto request)
+    {
+        var userId = GetUserId();
+        if (userId is null)
+        {
+            return Unauthorized(new { message = "Invalid token." });
+        }
+
+        var result = await _authService.UpdatePasswordAsync(userId.Value, request);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    private Guid? GetUserId()
+    {
+        var userIdValue = User.FindFirstValue("UserId");
+        return Guid.TryParse(userIdValue, out var parsed) ? parsed : null;
     }
 }

@@ -5,6 +5,7 @@ import MainLayout from './layouts/MainLayout'
 import ApplicantApplyPage from './pages/applicant/ApplicantApplyPage'
 import ApplicantDocumentsPage from './pages/applicant/ApplicantDocumentsPage'
 import ApplicantStatusPage from './pages/applicant/ApplicantStatusPage'
+import ProfilePage from './pages/applicant/ProfilePage'
 import AdminDashboardPage from './pages/admin/AdminDashboardPage'
 import AdminQueuePage from './pages/admin/AdminQueuePage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
@@ -29,6 +30,7 @@ function App() {
           <Route path="/applicant" element={<ApplicantLayout />}>
             <Route path="dashboard" element={<ApplicantDashboardPage />} />
             <Route path="applications" element={<MyApplicationsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="apply" element={<ApplicantApplyPage />} />
             <Route path="documents" element={<ApplicantDocumentsPage />} />
             <Route path="application/:id" element={<ApplicationDetailPage />} />

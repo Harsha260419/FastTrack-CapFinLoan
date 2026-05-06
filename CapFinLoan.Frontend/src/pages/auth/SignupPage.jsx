@@ -3,13 +3,17 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
 import axiosInstance from '../../api/axiosInstance'
+import useAuthStore from '../../store/authStore'
 
 function SignupPage() {
   const navigate = useNavigate()
+  const setAuth = useAuthStore((state) => state.setAuth)
+  console.log('Google Client ID:', import.meta.env.VITE_GOOGLE_CLIENT_ID)
   const [otpMessage, setOtpMessage] = useState('')
   const [sendOtpError, setSendOtpError] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [googleError, setGoogleError] = useState('')
   const [isSendingOtp, setIsSendingOtp] = useState(false)
   const [hasSentOtp, setHasSentOtp] = useState(false)
   const [countdown, setCountdown] = useState(0)
@@ -46,6 +50,72 @@ function SignupPage() {
 
     return () => window.clearInterval(timer)
   }, [countdown])
+
+  const handleGoogleResponse = async (response) => {
+    const credential = response?.credential
+    if (!credential) {
+      setGoogleError('Google sign-in failed. Please try again.')
+      return
+    }
+
+    setGoogleError('')
+
+    try {
+      const googleResponse = await axiosInstance.post('/gateway/auth/google', {
+        idToken: credential,
+      })
+
+      const authResponse = googleResponse.data || {}
+      const normalizedRole = String(authResponse?.role || 'APPLICANT').toUpperCase()
+      setAuth({ ...authResponse, role: normalizedRole })
+      navigate('/applicant/dashboard')
+    } catch (error) {
+      const statusCode = error?.response?.status
+      const message = error?.response?.data?.message || ''
+
+      if (statusCode === 400 && message.includes('already exists')) {
+        setGoogleError('An account with this email already exists. Please login with your password.')
+        return
+      }
+
+      setGoogleError('Google sign-in failed. Please try again.')
+    }
+  }
+
+  useEffect(() => {
+    const renderGoogleButton = () => {
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        })
+
+        const buttonEl = document.getElementById('google-signin-btn-signup')
+        if (buttonEl) {
+          window.google.accounts.id.renderButton(buttonEl, {
+            theme: 'outline',
+            size: 'large',
+            width: buttonEl.offsetWidth || 400,
+            text: 'continue_with',
+          })
+        }
+      }
+    }
+
+    if (window.google) {
+      renderGoogleButton()
+      return undefined
+    }
+
+    const interval = setInterval(() => {
+      if (window.google && window.google.accounts) {
+        clearInterval(interval)
+        renderGoogleButton()
+      }
+    }, 100)
+
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSendOtp = async () => {
     setOtpMessage('')
@@ -170,6 +240,20 @@ function SignupPage() {
               <h2 className="text-3xl font-bold tracking-tight text-slate-900">Create Account</h2>
               <p className="mt-2 text-sm text-slate-600">Set up your account to start applying for loans.</p>
             </div>
+
+          <div className="space-y-4">
+            <div id="google-signin-btn-signup" className="flex w-full justify-center" />
+            {googleError ? (
+              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                {googleError}
+              </p>
+            ) : null}
+            <div className="flex items-center gap-3">
+              <hr className="flex-1 border-slate-200" />
+              <span className="text-sm text-gray-400">or sign up with email</span>
+              <hr className="flex-1 border-slate-200" />
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>

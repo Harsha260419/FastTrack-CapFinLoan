@@ -1,4 +1,4 @@
-import { FileUp, LayoutDashboard, List } from 'lucide-react'
+import { FileUp, LayoutDashboard, List, User } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
 import ChatWidget from '../components/ChatWidget'
 import Navbar from '../components/Navbar'
@@ -8,6 +8,7 @@ import useAuthStore from '../store/authStore'
 const applicantLinks = [
   { label: 'Dashboard', to: '/applicant/dashboard', icon: LayoutDashboard },
   { label: 'My Applications', to: '/applicant/applications', icon: List },
+  { label: 'Profile', to: '/applicant/profile', icon: User },
   { label: 'Apply Loan', to: '/applicant/apply', icon: FileUp },
 ]
 
